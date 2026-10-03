@@ -1,0 +1,1845 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <script src="scripts/Jquery.min.js"></script>
+    <script src="scripts/Queries.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="cordova-shim.js"></script>
+    <script>
+        var storage = window.localStorage;
+        document.addEventListener("deviceready", onDeviceReady, false);
+        //Menu listeleme
+        function myMenu(result) {
+            $.each(result.categories, function (key, item) {
+                if (item.name.length > 20) {
+                    $("#Kategori").append('<input type=button class="btn btn-default onrrk" style="margin-top:1px;background-color:' + item.color + ';color:' + item.foreground + '" id=' + key + ' value="' + item.name + '" onclick=menugetir(this) />');
+                } else {
+                    $("#Kategori").append('<input type=button class="btn btn-default onrk" style="margin-top:1px;background-color:' + item.color + ';color:' + item.foreground + '" id=' + key + ' value="' + item.name + '" onclick=menugetir(this) />');
+                }
+                
+            });
+            $("#0")[0].onclick();
+
+        }
+        var orders = [];
+        //Kapatma işleminden sonra ticketload ekranına yönlendirme işlemi
+        function kapat() {
+            $("#Orders").empty();
+            if (orders.length == 0)
+            {
+                console.log("düşür");
+                window.location = "index.html";
+                return;
+            }
+
+           
+            if (storage.getItem('urunekle') == 'var' || orders.length > 0) {
+                window.location = "ticket_load.html";
+                orders.push("onur");
+                storage.removeItem('urunekle');
+            } else {
+                window.location = "index.html";
+            }
+        }
+        //Ürüne tıklandıktan sonra adisyona ekleme işlemi
+        function bulz(a, y) {
+        
+            //a productId, y sayısı
+            $(".fBtn").attr("disabled", true);
+            $(".scrollbar").show();
+            var terminalID = storage.getItem('terminalId');
+            $("#model").empty;
+            //Eğer seçilen üründe porsyion var ise ürünü tek tek basıyor çoklu eklemiyor eklemiyor.
+            getProductPortions(a, function (result) {
+                if (result.length > 1) {
+                    for (var x = 0; x < y; x++) {
+                        addOrderToTerminalTicket(terminalID, a, 1, function (result) {
+                            orders.push("onur");
+                            $("#model").empty;
+                            $("#Orders").empty();
+                            $("#value").empty();
+                            setTicket(result);
+                            //var length = result.orders.length - 1;
+                            //var orderUID = result.orders[length].uid;
+                            //var x = result.orders.length;
+                            //var order = result.orders[x - 1];
+                            //var pricex = order.price.toFixed(2);
+                            //if (order.quantity > 1) {
+                            //    var price = order.quantity * order.price;
+                            //    var pricefix = price.toFixed(2);
+                            //    $("#Orders").append('<li class="list-group-item oBtn" data-name="' + order.name + '" data-uid=' + orderUID + ' data-id=' + a + ' >' + order.quantity + 'x' + order.name + ' <span class="spn"> ' + pricefix + '</span> </li>');
+                            //} else {
+                            //    $("#Orders").append('<li class="list-group-item oBtn" data-name="' + order.name + '" data-uid=' + orderUID + ' data-id=' + a + ' >' + order.name + ' <span class="spn">' + pricex + '</span></li>');
+                            //}
+
+                            $('#Orders').animate({ scrollTop: $('#Orders').prop("scrollHeight") }, 10);
+                            //if (storage.getItem('dil') == '1') {
+                            //    $("#value").html('Total: ' + ticket.totalAmount.toFixed(2) + '');
+                            //} else {
+                            //    $("#value").html('Bakiye: ' + ticket.totalAmount.toFixed(2) + '');
+                            //}
+
+                            $(".fBtn").removeAttr("disabled");
+                        });
+                    }
+                } else {
+                    addOrderToTerminalTicket(terminalID, a, y, function (result) {
+                        orders.push("onur");
+                        $("#model").empty;
+                        $("#Orders").empty();
+                        $("#value").empty();
+                        setTicket(result);
+                        $('#Orders').animate({ scrollTop: $('#Orders').prop("scrollHeight") }, 10);
+                        $(".fBtn").removeAttr("disabled");
+                    });
+                }
+            });
+        }
+        var kategoriname;
+        var terminalID = storage.getItem('terminalId');
+        var masano = storage.getItem("Masa");
+        //terminalId kontrolü
+        function changeTerminalId(terminalId) {
+            terminalID = terminalId;
+        }
+        //terminalId update işlemi
+        function updateTerminalId(terminalID) {
+            storage.setItem('terminalId', terminalID);
+            changeTerminalId(terminalID);
+        }
+        //bu işlemde default olarak ürün adet bölümünde 1 in seçilmesini sağlıyoruz.
+        function a(a) {
+            bulz(a, sayi);
+            $("#x").prop("checked", true);
+            radiobuttons();
+            sayi = 1;
+        }
+        //Ürünlerin getirilmesi işlemi
+        function menugetir(a) {
+            $("#Urun").empty();
+            //$("#radio").show();
+            kategoriname = a.value;
+            getMenu(function (result) {
+                var menuItem;
+                var list = result.categories;
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].name == kategoriname) {
+                        menuItem = list[i].menuItems;
+                    }
+                }
+                $.each(menuItem, function (key, item) {
+                    if (item.name.length > 20) {
+                        $("#Urun").append('<button onclick=a(' + item.productId + ') data-value="' + item.name + '" data-id="' + item.productId + '" class="btn btn-default onnr" id=' + item.productId + ' style=margin-top:1px;background-color:' + item.color + ';color:' + item.foreground + ' >' + item.name + '</button>');
+                    } else {
+
+                        $("#Urun").append('<button onclick=a(' + item.productId + ') data-value="' + item.name + '" data-id="' + item.productId + '" class="btn btn-default onr" id=' + item.productId + ' style="margin-top:1px;background-color:' + item.color + ';color:' + item.foreground + '" >' + item.name + '</button>');
+                    }
+
+                });
+            });
+        }
+        //Masanumarasını navigasyone ekleme
+        function masanumarası() {
+            var ticketid = storage.getItem('ticketId');
+            var masaadi = storage.getItem("Masa");
+            if (ticketid == null) {
+                $("#masanumara").empty();
+                $("#masanumara").append('<span class="msNo" style="font-size="15px">' + masaadi + '</span>');
+            } else {
+
+               
+                    $("#masanumara").empty();
+                    $("#masanumara").append('<span class="msNo" style="font-size="15px">' + masaadi + ' ' + storage.getItem("ticket") + ':' + ticketid + '</span>');
+               
+
+            }
+        }
+        //Bu fonksiyon ekrandaki listeye düzgün olarak basılmasını sağlar,ticket olarak dönen tüm fonksiyonları buna yönlendiriyoruz.
+        function setTicket(ticket) {
+            var state;
+            var terminalID = storage.getItem('terminalId');
+           
+            var str = JSON.stringify(ticket.orders);
+            var ordercount = Object.keys(ticket.orders).length;
+
+
+
+            console.log(ticket.orders[ordercount-1].uid);
+
+            lastorderuid = ticket.orders[ordercount - 1].uid;
+
+            storage.setItem("lastorderuid", lastorderuid);
+
+         
+
+            state = storage.getItem('new');
+
+            //if (storage.getItem('dil') == '1') {
+            //    state = 'New';
+            //} else {
+            //    state = 'Yeni';
+            //}
+
+
+            if (ticket != null) {
+                
+                    $("#value").html(storage.getItem("total")+': ' + ticket.totalAmount.toFixed(2) + '');
+              
+                $.each(ticket.orders, function (key, item) {
+                    var durum = false;
+                    $.each(item.states, function (key, item) {
+                        if (item.stateName == "Status" && item.state == state) {
+                            durum = true;
+                        }
+                    })
+                    if (durum) {
+                        //var itemname;
+                        //if (item.name.length > 20) {
+                        //
+                        //    itemname = item.name.substring(0, 15) + "...";
+                        //} else {
+                        //    itemname = item.name;
+                        //
+                        //}
+                        var itemname = item.name.length > 20 ? item.name.slice(0, 13) + "..." : item.name;
+                        var pricex = item.price.toFixed(2);
+                        if (item.quantity != 1) {
+                            var price = item.quantity * item.price;
+                            var pricefix = price.toFixed(2);
+                            if (item.portion != 'Normal') {
+                                $("#Orders").append('<li "font-size:medium" data-name="' + item.name + '" data-uid=' + item.uid + ' data-id=' + item.productId + ' class="list-group-item oBtn" id=' + key + '>' + item.quantity + 'x' + itemname + ' ' + item.portion + ' <span class="spn"  >' + pricefix + '</span></li>');
+                            } else {
+                                $("#Orders").append('<li "font-size:medium" data-name="' + item.name + '" data-uid=' + item.uid + ' data-id=' + item.productId + ' class="list-group-item oBtn" id=' + key + '>' + item.quantity + 'x' + itemname + ' <span class="spn">' + pricefix + '</span></li>');
+                            }
+                        } else {
+                            if (item.portion != 'Normal') {
+                                $("#Orders").append('<li "font-size:medium" data-name="' + item.name + '" data-uid=' + item.uid + ' data-id=' + item.productId + ' class="list-group-item oBtn" id=' + key + '>' + itemname + ' ' + item.portion + ' <span class="spn">' + pricex + '</span></li>');
+                            } else {
+                                $("#Orders").append('<li "font-size:medium" data-name="' + item.name + '" data-uid=' + item.uid + ' data-id=' + item.productId + ' class="list-group-item oBtn" id=' + key + '>' + itemname + ' <span class="spn">' + pricex + '</span></li>');
+                            }
+                        }
+                        if (item.tags.length > 0) {
+                            for (var i = 0; i < item.tags.length; i++) {
+                                var name = item.tags[i].tag;
+                                var pricex = item.tags[i].price.toFixed(2);
+                                var quantity = item.tags[i].quantity;
+                                if (quantity > 1) {
+                                    pricex = quantity * pricex;
+                                    pricex = pricex.toFixed(2);
+                                    $('#' + key + '.oBtn').append('<li class="tags">' + quantity + 'x' + name + '<span class="spn">' + pricex + '</span></li>');
+                                } else {
+                                    $('#' + key + '.oBtn').append('<li class="tags">' + name + '<span class="spn">' + pricex + '</span></li>');
+                                }
+                                //Eklenecek
+                                //if (note != null) {
+                                //    $('#' + key + '.oBtn').append('<li class="tags">' + name + ':' + note + '<span class="spn">' + pricex + '</span></li>');
+                                //} else {
+                                //    $('#' + key + '.oBtn').append('<li class="tags">' + name + '<span class="spn">' + pricex + '</span></li>');
+                                //}
+                            }
+                        }
+                    }
+
+                });
+            } else {
+                alert("Terminal 0x00001");
+            }
+        }
+        var sayi = 1;
+        function onDeviceReady() {
+            document.addEventListener("backbutton", yourCallbackFunction, false);
+        }
+        function yourCallbackFunction() {
+
+        }
+        function radiobuttons() {
+            $("#radio").empty();
+            $("#radio").append('<input type="radio" id="x" class="rad" name="group" value="1" checked><label class="rad" for="x">1</label><input type="radio" class="rad" id="radio2" name="group"value="2"><label class="rad" for="radio2">2</label><input type="radio" class="rad" id="radio3" name="group" value="3"><label class="rad" for="radio3">3</label><input type="radio" class="rad" id="radio4" name="group" value="4"><label class="rad" for="radio4">4</label><input type="radio" class="rad" id="radio5" name="group" value="5"><label class="rad" for="radio5">5</label><input type="radio" class="rad" id="radio6" name="group" value="6"><label id="change" class="rad" for="radio6">...</label>');
+        }
+        function ordertag(result) {
+
+        }
+        //-----------long press--------------
+        //<input style="height:60px" type="button" onmousedown="func()" onmouseup="revert()" value="hold for long" />
+        var timer;
+        var istrue = false;
+        var delay = 2000; // how much long u have to hold click in MS
+        function func() {
+            istrue = true;
+            timer = setTimeout(function () { makeChange(); }, delay);
+        }
+
+        function makeChange() {
+            if (timer)
+                clearTimeout(timer);
+
+            if (istrue) {
+                /// rest of your code
+                alert('holding');
+
+            }
+        }
+        function revert() {
+            istrue = false;
+        }
+        //------------long press end ------ 
+
+        $(function () {
+            $(".user").append(config.userName);
+            //eğer db language ingilizce seçilirse programda ufak değişikliler yapılıyor.
+           
+            $(".fBtn").val(storage.getItem("close"));
+           
+           
+
+            $("#value").show();
+            getMenu(myMenu);
+            var clickedbtn = document.getElementById("0");
+
+            //clickedbtn.click();
+            //MenuItemlar üzerindeki radio buttonların ekrana getirilmesi
+            radiobuttons();
+            $(document).on('change', 'input[type=radio][name=group]', function () {
+                if ($(this).val() == 6) {
+                    $("#model2").empty();
+                    $("#model2").append('<div id="myModal2" class="modal fade" role="dialog"><div class="modal-dialog"><!-- Modal content--><div class="modal-content"><div class="modal-header"><h3>' + storage.getItem("add_quantity") + '</h3></div><div class="modal-body"><input type="tel" pattern="[0-9]*" id="focus" inputmode="numeric" class="form-control text" /></div><div class="modal-footer"><button type="button" class="btn btn-danger clsBtn" data-dismiss="modal">' + storage.getItem("close") + '</button><button type="button" class="btn btn-info sxBtn" >' + storage.getItem("save") + '</button></div></div></div></div>');
+                   {
+                       $(".sBtn").val(storage.getItem("save"));
+                       $(".clsBtn").html(storage.getItem("close"));
+                    }
+                    $("#myModal2").modal('show');
+                    $('#myModal2').on('shown.bs.modal', function () {
+                        $("#focus").focus();
+                    });
+                    $(".sxBtn").unbind().click(function () {
+                        sayi = $(".text").val();
+                        $("#change").html(sayi);
+                        $("#myModal2").modal('hide');
+                    });
+                    $(".clsBtn").unbind().click(function () {
+                        $("#myModal2").modal('hide');
+                    })
+                } else {
+                    sayi = $(this).val();
+                }
+            });
+            masanumarası();
+            //Adisyona eklenmiş ürünlere işlem yapılan bölüm
+            $("#Orders").on('click', '.oBtn', function () {
+                var uid = $(this).data("uid");
+                var id = $(this).data("id");
+                var name = $(this).data("name");
+                $("#model").empty();
+                $("#model").append('<div id="myModal" class="modal fade" role="dialog"><div class="modal-dialog"><!-- Modal content--><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="mdlName"></h6></div><div class="modal-body1" style="width:90%;margin-left:5%" ></div><div style="width:100%;height:10px"></div><div id="body2" class="modal-body2" style="width:90%;margin-left:5%"></div><div class="modal-footer"></div></div></div></div>');
+                $('.mdlName').html(name);
+                $(".modal-body1").empty();
+                $(".modal-footer").empty();
+                $(".modal-body2").empty();
+                //Ordertag güncelleme işlemi
+                getOrderTagsForTerminalTicketOrder(terminalID, uid, function (result) {                    
+                    $.each(result, function (key, item) {
+                        var maxselect = item.maxSelection;
+                        var requiredselect = item.requiredSelection;
+                        var divid = key;
+                        var kategoriname = item.name;
+                        $(".modal-body2").append('<div id=' + key + '><h5 class="mdlTagname">' + item.name + '</h5><p style="border : 0.5px dashed #FF0000; width: 100%;"></p></div>');
+                        if(item.tags.length>0){
+                        $.each(item.tags, function (key, item) {
+                            var str = item.caption;
+                            str = str.replace(/<{1}[^<>]{1,}>{1}/g, " ");
+                            $("div[id=" + divid + "]").append('<input data-div=' + divid + ' type="button"  data-rselect=' + requiredselect + ' data-maxselect=' + maxselect + ' data-execname="' + item.name + '" data-kategori="' + kategoriname + '" style="background-color:' + item.color + ';color:' + item.labelColor + ';" class="btn btn-default tagBtn" value="' + str + '"/>');
+                        });
+                        } else {                           
+                            $(".modal-body2").append('<div id=' + uid + ' style="width:100%"><input type="text" style="width:50%;display:inline-block" class="form-control tagvalue" placeholder="tag" /><input type="button" data-kategori="' + kategoriname + '" class="btn btn-info sText" style="margin-left:1%;width:30%;display:inline-block" value="' + storage.getItem("save") + '" /></div>');
+                        }
+                    });
+                    $('.sText').unbind().click(function () {
+                        var name = $(this).data("kategori");
+                        var tag = $('.tagvalue').val();
+                        updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (cevap) {
+                            $("#Orders").empty();
+                            $("#value").empty();
+                            setTicket(cevap);
+                        })
+                    });
+                    $(document).unbind().on('click', '.tagBtn', function () {
+                        var scrollTOPof=$('.modal-body2').scrollTop();
+                        var name = $(this).data("kategori");
+                        var tag = $(this).data("execname");
+                        var required = $(this).data("rselect");
+                        var maxselect = $(this).data("maxselect");
+                        var divid = $(this).data("div");
+                        var list = $("div[id=" + divid + "] :input");
+                        updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (cevap) {
+                            $("#Orders").empty();
+                            $("#value").empty();
+                            setTicket(cevap);
+                            getOrderTagsForTerminalTicketOrder(terminalID, uid, function (result) {                        
+                                $("#body2").empty();
+                                $.each(result, function (key, item) {
+                                    var maxselect = item.maxSelection;
+                                    var requiredselect = item.requiredSelection;
+                                    var divid = key;
+                                    var kategoriname = item.name;
+                                    $(".modal-body2").append('<div id=' + key + '><h5 class="mdlName">' + item.name + '</h5><p style="border : 0.5px dashed #FF0000; width: 100%;"></p></div>');
+                                    if (item.tags.length > 0) {
+                                        $.each(item.tags, function (key, item) {
+                                            var str = item.caption;
+                                            str = str.replace(/<{1}[^<>]{1,}>{1}/g, " ");
+                                             $("div[id=" + divid + "]").append('<input data-div=' + divid + ' type="button" data-rselect=' + requiredselect + ' data-execname="' + item.name + '" data-maxselect=' + maxselect + ' data-kategori="' + kategoriname + '" style="background-color:' + item.color + ';color:' + item.labelColor + ';" class="btn btn-default tagBtn" value="' + str + '"/>');
+                                        });
+                                        
+                                    } else {
+                                        $(".modal-body2").append('<div id=' + uid + ' style="width:100%"><input type="text" style="width:50%;display:inline-block" class="form-control tagvalue" placeholder="tag" /><input type="button" data-kategori="' + kategoriname + '" class="btn btn-info sText" style="margin-left:1%;width:30%;display:inline-block" value="Save" /></div>');
+
+                                        $('.sText').unbind().click(function () {
+                                            var name = $(this).data("kategori");
+                                            var tag = $('.tagvalue').val();
+                                            updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (cevap) {
+                                                $("#Orders").empty();
+                                                $("#value").empty();
+                                                setTicket(cevap);
+                                            })
+                                        });
+                                    }                                   
+                                    //$('.modal-body2').animate({ scrollTop: $('.modal-body2').prop("scrollHeight") }, 500);
+                                });
+                                $('.modal-body2').animate({
+                                    scrollTop: scrollTOPof
+                                }, 0);
+
+                            });
+                        });
+                        //if (maxselect == 1) {
+                        //    $(this).addClass("selected").siblings().removeClass("selected");
+                        //    updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (cevap) {
+                        //        $("#Orders").empty();
+                        //        $("#value").empty();
+                        //        setTicket(cevap);
+
+                        //    });
+                        //} else if (maxselect > 1) {
+                        //    if ($(this).hasClass("selected")) {
+                        //        $(this).removeClass("selected");
+                        //        updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (cevap) {
+                        //            $("#Orders").empty();
+                        //            $("#value").empty();
+                        //            setTicket(cevap);
+                        //        });
+                        //    } else {
+                        //        var count = 0;
+                        //        $.each(list, function (key, item) {
+                        //            if ($(item).hasClass("selected")) {
+                        //                count++;
+                        //            }
+                        //        })
+                        //        if (maxselect == count) {
+
+                        //        } else {
+                        //            $(this).addClass("selected");
+                        //            updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (result) {
+                        //                $("#Orders").empty();
+                        //                $("#value").empty();
+                        //                setTicket(result);
+                        //            });
+                        //        }
+                        //    }
+                        //    var x = document.getElementsByClassName("tagBtn");
+                        //} else if (maxselect == 0) {
+                        //    $(this).toggleClass("selected");
+                        //    updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (result) {
+                        //        $("#Orders").empty();
+                        //        $("#value").empty();
+                        //        setTicket(result);
+                        //    });
+                        //}
+                        //$(this).toggleClass("selected");
+                        //if ($(this).hasClass("selected")) {
+                        //    $(this).css("background-color", "#3498db");
+                        //    $(this).css("color", "white");
+                        //} else {
+                        //    $(this).css("color", "black");
+                        //    $(this).css("background-color", "white");
+                        //}
+                        //updateOrderTagOfTerminalTicket(terminalID, uid, name, tag, function (result) {
+                        //    $("#Orders").empty();
+                        //    $("#value").empty();
+                        //    setTicket(result);
+                        //});
+                    });
+                });
+
+                //Porsiyon Güncelleme işlemi
+                getProductPortions(id, function (callback) {
+                    $("#myModal").modal('show');
+                    $(".modal-body1").append('<div><h5 class="porsiyon">' + storage.getItem("portion") + '</h5><p style="border : 0.5px dashed #FF0000; width: 100%;"></p></div>');
+                    $.each(callback, function (key, item) {
+                        $(".modal-body1").append('<input type="button" style="margin:1px;" class="btn btn-info mdlBtn" name="' + item.name + '" id=' + item.id + ' value="' + item.name + ' ' + item.price + '"/>');
+                    });
+                    $(".modal-footer").append('<input type="button" class="btn btn-warning cBtn" value="' + storage.getItem("cancel") + '/><input type="button" class="btn btn-danger cls" value="' + storage.getItem("close") + '"/>');
+                   
+                    $(".cls").val(storage.getItem("close"))
+                    $(".cBtn").val(storage.getItem("cancel"));
+                    $(".porsiyon").html(storage.getItem("portion"));
+                   
+                    $(".cls").unbind().click(function () {
+                        $("#myModal").modal('hide');
+                    });
+                    $(".cBtn").unbind().click(function () {
+                      
+                          
+                           $("#myModal").modal('hide');
+                       // cancelOrderOnTerminalTicket(terminalID, uid, function (result) {
+                        //    $("#Orders").empty();
+                        //    $("#value").empty();
+                        //    setTicket(result);
+                        //    $("#myModal").modal('hide');
+                        //});
+                    });
+                    $(".mdlBtn").unbind().click(function () {
+                        var porsiyon = $(this).attr("name");
+                        updateOrderPortionOfTerminalTicket(terminalID, uid, porsiyon, function (result) {
+                            $("#Orders").empty();
+                            $("#value").empty();
+                            setTicket(result);
+                            $("#myModal").modal('hide');
+                        });
+                    });
+                });
+            });
+            //Eğer işlem load ise ticketi getirir değilse yeni bir adisyon açılır
+            if (storage.getItem('load')) {
+                $(".scrollbar").show();
+                getTerminalTicket(terminalID, function (ticket) {
+                   
+
+                    setTicket(ticket);
+                });
+            } else {
+                createTerminalTicket(terminalID, function (ticket) {
+                    console.log(ticket.date);
+                    // month + "/" + day + "/" + year; kontrol türü
+                    var datex = ticket.date.split("T")[0];
+                    var date = datex.split("-");
+                    var yil = date[0];
+                    var ay = date[1];
+                    var gun = date[2];
+                    var systemDate = ay + "/" + gun + "/" + yil;
+                    storage.setItem("systemDate", systemDate);
+                    changeEntityOfTerminalTicket(terminalID, masano, function (result) { });
+                    if (storage.getItem("ttag")) {
+                        var tagName = storage.getItem("ticketTag");
+                        var tag = storage.getItem("ttag");
+                        updateTerminalTickettag(terminalID, tagName, tag, function (result) {
+
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+
+    <style>
+        /*Telefon*/
+        @media only screen and (max-width: 480px) {
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .rad {
+                width: 18%;
+                height: 30%;
+            }
+
+            #radio {
+                margin-left: 28%;
+                width: 70%;
+                padding-left: 3px;
+                position: fixed;
+                z-index: 1;
+                top: 10%;
+            }
+
+            .selected {
+                background-color: #3498db !important;
+                color: white !important;
+            }
+
+            .tags {
+                list-style-type: none;
+                color: #3399ff;
+                font-size: 10px;
+            }
+
+            .gndr {
+                font-size: 8px;
+            }
+
+            .scrollbar {
+                top: 56%;
+                margin-left: 28%;
+                float: left;
+                width: 70%;
+                height: 30%;
+                position: absolute;
+                display: none;
+            }
+
+            #Orders {
+                width: 100%;
+                height: 100%;
+                overflow-y: auto;
+                font-family: Calibri;
+            }
+
+            .kategori {
+                top: 10%;
+                float: left;
+                overflow-y: scroll;
+                width: 25%;
+                height: 75%;
+                position: fixed;
+                margin-left: 2%;
+                overflow-x:hidden;
+            }
+
+            .urun {
+                white-space: normal;
+                top: 15%;
+                margin-left: 27%;
+                overflow-y: scroll;
+                width: 70%;
+                height: 40%;
+                position: fixed;
+                padding-left: 5px;
+                z-index: 0;
+            }
+
+            ._urunlerbtn {
+                height: 30px;
+            }
+
+                ._urunlerbtn:hover {
+                    border: solid 2px white;
+                }
+
+            ._kategoribtn {
+                width: 90px;
+                height: 30px;
+            }
+
+            ._orderlist {
+                color: green;
+            }
+
+            .onrk {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 100%;
+                font-size: 14px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onrrk {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 100%;
+                font-size: 9px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onr {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 50%;
+                font-size: 14px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onnr {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 50%;
+                font-size: 9px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            footer {
+                height: 9%;
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+            }
+
+
+            #Kategori {
+                font-family: Calibri;
+            }
+
+
+
+            .spn {
+                float: right;
+            }
+
+            .fBtn {
+                height: 92%;
+                width: 22%;
+                float: left;
+                margin-left: 3%;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: medium;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+            }
+
+            .sBtn {
+                width: 25px;
+                height: 25px;
+                font-size: medium;
+            }
+
+            input[type=radio], input[type=checkbox] {
+                display: none;
+            }
+
+                input[type=radio] + label, input[type=checkbox] + label {
+                    display: inline-block;
+                    margin: -2px;
+                    padding: 4px 12px;
+                    margin-bottom: 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #333;
+                    text-align: center;
+                    text-shadow: 0 1px 1px rgba(255,255,255,0.75);
+                    vertical-align: middle;
+                    cursor: pointer;
+                    background-color: #f5f5f5;
+                    background-image: -moz-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -webkit-gradient(linear,0 0,0 100%,from(#fff),to(#e6e6e6));
+                    background-image: -webkit-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -o-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: linear-gradient(to bottom,#fff,#e6e6e6);
+                    background-repeat: repeat-x;
+                    border: 1px solid #ccc;
+                    border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+                    border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) rgba(0,0,0,0.25);
+                    border-bottom-color: #b3b3b3;
+                    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff',endColorstr='#ffe6e6e6',GradientType=0);
+                    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+                    -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                }
+
+                input[type=radio]:checked + label, input[type=checkbox]:checked + label {
+                    background-image: none;
+                    outline: 0;
+                    -webkit-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    background-color: #e0e0e0;
+                }
+
+            .tagBtn {
+                height: 60px;
+                width: 49%;
+                white-space: normal;
+                margin: 0.5%;
+            }
+
+            .cls, .cBtn {
+                height: 40px;
+                font-size: 16px !important;
+            }
+
+            .mdlBtn {
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+        /*Telefon Manzara Modu*/
+        @media only screen and (min-width: 480px) and (max-width:760px) {
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .rad {
+                width: 17%;
+                height: 30%;
+            }
+
+             #radio {
+                margin-left: 28%;
+                width: 70%;
+                padding-left: 3px;
+                position: fixed;
+                z-index: 1;
+                top: 16%;
+            }
+
+            .selected {
+                background-color: #3498db !important;
+                color: white !important;
+            }
+
+            .tags {
+                list-style-type: none;
+                color: #3399ff;
+                font-size: 10px;
+            }
+
+            .gndr {
+                font-size: 10px;
+            }
+
+            .scrollbar {
+                top: 56%;
+                margin-left: 28%;
+                float: left;
+                width: 70%;
+                height: 34%;
+                position: fixed;
+                display: none;
+            }
+
+            #Orders {
+                width: 100%;
+                height: 100%;
+                overflow-y: auto;
+                font-family: Calibri;
+            }
+
+            .kategori {
+                top: 16%;
+                float: left;
+                overflow-y: scroll;
+                width: 25%;
+                height: 69%;
+                position: fixed;
+                margin-left: 2%;
+            }
+
+            .urun {
+                white-space: normal;
+                top: 24%;
+                margin-left: 27%;
+                overflow-y: scroll;
+                width: 70%;
+                height: 31%;
+                position: fixed;
+                padding-left: 5px;
+            }
+
+            ._urunlerbtn {
+                height: 30px;
+            }
+
+                ._urunlerbtn:hover {
+                    border: solid 2px white;
+                }
+
+            ._kategoribtn {
+                width: 90px;
+                height: 30px;
+            }
+
+            ._orderlist {
+                color: green;
+            }
+
+            .onrk {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 100%;
+                font-size: 15px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onrrk {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 100%;
+                font-size: 10px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onr {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 50%;
+                font-size: 15px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onnr {
+                font-family: Calibri !important;
+                height: 50px !important;
+                width: 50%;
+                font-size: 10px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            footer {
+                height: 9%;
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+            }
+
+
+            #Kategori {
+                font-family: Calibri;
+            }
+
+
+
+            .spn {
+                float: right;
+            }
+
+            .fBtn {
+                position: fixed;
+                top: 88%;
+                height: 40px;
+                width: 25%;
+                float: left;
+                margin-left: 2%;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: medium;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+            }
+
+            .sBtn {
+                width: 25px;
+                height: 25px;
+                font-size: medium;
+            }
+
+            input[type=radio], input[type=checkbox] {
+                display: none;
+            }
+
+                input[type=radio] + label, input[type=checkbox] + label {
+                    display: inline-block;
+                    margin: -2px;
+                    padding: 4px 12px;
+                    margin-bottom: 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #333;
+                    text-align: center;
+                    text-shadow: 0 1px 1px rgba(255,255,255,0.75);
+                    vertical-align: middle;
+                    cursor: pointer;
+                    background-color: #f5f5f5;
+                    background-image: -moz-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -webkit-gradient(linear,0 0,0 100%,from(#fff),to(#e6e6e6));
+                    background-image: -webkit-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -o-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: linear-gradient(to bottom,#fff,#e6e6e6);
+                    background-repeat: repeat-x;
+                    border: 1px solid #ccc;
+                    border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+                    border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) rgba(0,0,0,0.25);
+                    border-bottom-color: #b3b3b3;
+                    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff',endColorstr='#ffe6e6e6',GradientType=0);
+                    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+                    -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                }
+
+                input[type=radio]:checked + label, input[type=checkbox]:checked + label {
+                    background-image: none;
+                    outline: 0;
+                    -webkit-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    background-color: #e0e0e0;
+                }
+
+            .tagBtn {
+                height: 60px;
+                width: 49%;
+                white-space: normal;
+                margin: 0.5%;
+            }
+
+            .cls, .cBtn {
+                height: 40px;
+                font-size: 16px !important;
+            }
+
+            .mdlBtn {
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+        /*Tablet*/
+        @media only screen and (min-width: 480px) and (max-width:760px) and (min-height:800px) {
+         
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .rad {
+                width: 17%;
+                height: 30%;
+            }
+
+            #radio {
+                margin-left: 28%;
+                width: 70%;
+                padding-left: 3px;
+                position: fixed;
+                z-index: 1;
+                top: 8%;
+            }
+
+            .selected {
+                background-color: #3498db !important;
+                color: white !important;
+            }
+
+            .tags {
+                list-style-type: none;
+                color: #3399ff;
+                font-size: 12px;
+            }
+
+            .gndr {
+                font-size: 10px;
+            }
+
+            .scrollbar {
+                top: 56%;
+                margin-left: 28%;
+                float: left;
+                width: 70%;
+                height: 36%;
+                position: fixed;
+                display: none;
+            }
+
+            #Orders {
+                width: 100%;
+                height: 100%;
+                overflow-y: auto;
+                font-family: Calibri;
+            }
+
+            .kategori {
+                top: 8%;
+                float: left;
+                overflow-y: scroll;
+                width: 25%;
+                height: 77%;
+                position: fixed;
+                margin-left: 2%;
+            }
+
+            .urun {
+                white-space: normal;
+                top: 11%;
+                margin-left: 27%;
+                overflow-y: scroll;
+                width: 70%;
+                height: 42%;
+                position: fixed;
+                padding-left: 5px;
+            }
+
+            ._urunlerbtn {
+                height: 70px;
+            }
+
+                ._urunlerbtn:hover {
+                    border: solid 2px white;
+                }
+
+            ._kategoribtn {
+                width: 90px;
+                height: 70px;
+            }
+
+            ._orderlist {
+                color: green;
+            }
+
+            .onrk {
+                font-family: Calibri !important;
+                height: 70px !important;
+                width: 100%;
+                font-size: 15px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onrrk {
+                font-family: Calibri !important;
+                height: 70px !important;
+                width: 100%;
+                font-size: 10px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onr {
+                font-family: Calibri !important;
+                height: 70px !important;
+                width: 50%;
+                font-size: 15px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onnr {
+                font-family: Calibri !important;
+                height: 70px !important;
+                width: 50%;
+                font-size: 10px;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            footer {
+                height: 9%;
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+            }
+
+
+            #Kategori {
+                font-family: Calibri;
+            }
+
+
+
+            .spn {
+                float: right;
+            }
+
+            .fBtn {
+                position: fixed;
+                top: 88%;
+                height: 70px;
+                width: 25%;
+                float: left;
+                margin-left: 2%;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: medium;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+                font-size: 14px;
+            }
+
+            .sBtn {
+                width: 25px;
+                height: 25px;
+                font-size: medium;
+            }
+
+            input[type=radio], input[type=checkbox] {
+                display: none;
+            }
+
+                input[type=radio] + label, input[type=checkbox] + label {
+                    display: inline-block;
+                    margin: -2px;
+                    padding: 4px 12px;
+                    margin-bottom: 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #333;
+                    text-align: center;
+                    text-shadow: 0 1px 1px rgba(255,255,255,0.75);
+                    vertical-align: middle;
+                    cursor: pointer;
+                    background-color: #f5f5f5;
+                    background-image: -moz-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -webkit-gradient(linear,0 0,0 100%,from(#fff),to(#e6e6e6));
+                    background-image: -webkit-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -o-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: linear-gradient(to bottom,#fff,#e6e6e6);
+                    background-repeat: repeat-x;
+                    border: 1px solid #ccc;
+                    border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+                    border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) rgba(0,0,0,0.25);
+                    border-bottom-color: #b3b3b3;
+                    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff',endColorstr='#ffe6e6e6',GradientType=0);
+                    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+                    -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                }
+
+                input[type=radio]:checked + label, input[type=checkbox]:checked + label {
+                    background-image: none;
+                    outline: 0;
+                    -webkit-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    background-color: #e0e0e0;
+                }
+
+            .tagBtn {
+                height: 60px;
+                width: 49%;
+                white-space: normal;
+                margin: 0.5%;
+            }
+
+            .cls, .cBtn {
+                height: 40px;
+                font-size: 16px !important;
+            }
+
+            .mdlBtn {
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+
+        @media only screen and (min-width: 768px) and (max-height:800px) {
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .rad {
+                width: 17%;
+                height: 40px;
+            }
+
+             #radio {
+                margin-left: 28%;
+                width: 70%;
+                padding-left: 3px;
+                position: fixed;
+                z-index: 1;
+                top: 11%;
+            }
+
+            .selected {
+                background-color: #3498db !important;
+                color: white !important;
+            }
+
+            .tags {
+                list-style-type: none;
+                color: #3399ff;
+                font-size: 14px !important;
+            }
+
+            .gndr {
+                font-size: 8px;
+            }
+
+            .scrollbar {
+                top: 57%;
+                margin-left: 28%;
+                float: left;
+                width: 70%;
+                height: 30%;
+                position: fixed;
+                display: none;
+            }
+
+            #Orders {
+                width: 100%;
+                height: 100%;
+                overflow-y: auto;
+                font-family: Calibri;
+            }
+
+            .kategori {
+                top: 11vh !important;
+                float: left;
+                overflow-y: scroll;
+                width: 25%;
+                height: 71%;
+                position: fixed;
+                margin-left: 2%;
+            }
+
+            .urun {
+                white-space: normal;
+                top: 17vh !important;
+                margin-left: 27%;
+                overflow-y: scroll;
+                width: 70%;
+                height: 38%;
+                position: fixed;
+                padding-left: 5px;
+            }
+
+            ._urunlerbtn {
+                height: 30px;
+            }
+
+                ._urunlerbtn:hover {
+                    border: solid 2px white;
+                }
+
+            ._kategoribtn {
+                width: 90px;
+                height: 30px;
+            }
+
+            ._orderlist {
+                color: green;
+            }
+
+            .onrk {
+                font-family: Calibri !important;
+                height: 90px !important;
+                width: 100%;
+                font-size: 25px !important;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onrrk {
+                font-family: Calibri !important;
+                height: 90px !important;
+                width: 100%;
+                font-size: 16px !important;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onr {
+                font-family: Calibri !important;
+                white-space: normal;
+                word-wrap: break-word;
+                width: 33% !important;
+                height: 90px !important;
+                font-size: 25px !important;
+            }
+
+            .onnr {
+                font-family: Calibri !important;
+                white-space: normal;
+                word-wrap: break-word;
+                height: 90px !important;
+                width: 33% !important;
+                font-size: 16px;
+            }
+
+            footer {
+                height: 9%;
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+            }
+
+
+            #Kategori {
+                font-family: Calibri;
+            }
+
+
+
+            .spn {
+                float: right;
+            }
+
+            .fBtn {
+                width: 22%;
+                float: left;
+                margin-left: 3%;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 25px !important;
+                height: 70px !important;
+                bottom: 1px;
+                position: fixed;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+                font-size: 25px !important;
+            }
+
+            .sBtn {
+                width: 25px;
+                height: 25px;
+                font-size: medium;
+            }
+
+            input[type=radio], input[type=checkbox] {
+                display: none;
+            }
+
+                input[type=radio] + label, input[type=checkbox] + label {
+                    display: inline-block;
+                    margin: -2px;
+                    padding: 4px 12px;
+                    margin-bottom: 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #333;
+                    text-align: center;
+                    text-shadow: 0 1px 1px rgba(255,255,255,0.75);
+                    vertical-align: middle;
+                    cursor: pointer;
+                    background-color: #f5f5f5;
+                    background-image: -moz-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -webkit-gradient(linear,0 0,0 100%,from(#fff),to(#e6e6e6));
+                    background-image: -webkit-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -o-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: linear-gradient(to bottom,#fff,#e6e6e6);
+                    background-repeat: repeat-x;
+                    border: 1px solid #ccc;
+                    border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+                    border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) rgba(0,0,0,0.25);
+                    border-bottom-color: #b3b3b3;
+                    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff',endColorstr='#ffe6e6e6',GradientType=0);
+                    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+                    -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                }
+
+                input[type=radio]:checked + label, input[type=checkbox]:checked + label {
+                    background-image: none;
+                    outline: 0;
+                    -webkit-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    background-color: #e0e0e0;
+                }
+
+            .tagBtn {
+                height: 8vh;
+                font-size: 20px;
+                width: 49%;
+                white-space: normal;
+                margin: 0.5%;
+            }
+
+            .cls, .cBtn {
+                height: 8vh;
+                font-size: 20px !important;
+            }
+
+            .mdlBtn {
+                height: 8vh;
+                font-size: 20px !important;
+            }
+
+            .fBtn {
+                font-size: 25px !important;
+                height: 70px !important;
+                bottom: 1px;
+                position: fixed;
+            }
+
+            .msNo {
+                font-size: 20px !important;
+            }
+
+            .total {
+                font-size: 30px !important;
+            }
+
+            .mdlName {
+                font-size: 25px !important;
+            }
+
+            .head {
+                height: 6vh;
+            }
+        }
+
+
+        @media only screen and (min-width: 768px) and (min-height:800px) {
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .rad {
+                width: 17%;
+                height: 40px;
+            }
+
+             #radio {
+                margin-left: 28%;
+                width: 70%;
+                padding-left: 3px;
+                position: fixed;
+                z-index: 1;
+                top: 6%;
+            }
+
+            .selected {
+                background-color: #3498db !important;
+                color: white !important;
+            }
+
+            .tags {
+                list-style-type: none;
+                color: #3399ff;
+                font-size: 14px !important;
+            }
+
+            .gndr {
+                font-size: 8px;
+            }
+
+            .scrollbar {
+                top: 53%;
+                margin-left: 28%;
+                float: left;
+                width: 70%;
+                height: 30%;
+                position: fixed;
+                display: none;
+            }
+
+            #Orders {
+                width: 100%;
+                height: 100%;
+                overflow-y: auto;
+                font-family: Calibri;
+            }
+
+            .kategori {
+                top: 6vh !important;
+                float: left;
+                overflow-y: scroll;
+                width: 25%;
+                height: 75%;
+                position: fixed;
+                margin-left: 2%;
+            }
+
+            .urun {
+                white-space: normal;
+                top: 10vh !important;
+                margin-left: 27%;
+                overflow-y: scroll;
+                width: 70%;
+                height: 40%;
+                position: fixed;
+                padding-left: 5px;
+            }
+
+            ._urunlerbtn {
+                height: 30px;
+            }
+
+                ._urunlerbtn:hover {
+                    border: solid 2px white;
+                }
+
+            ._kategoribtn {
+                width: 90px;
+                height: 30px;
+            }
+
+            ._orderlist {
+                color: green;
+            }
+
+            .onrk {
+                font-family: Calibri !important;
+                height: 90px !important;
+                width: 100%;
+                font-size: 25px !important;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onrrk {
+                font-family: Calibri !important;
+                height: 90px !important;
+                width: 100%;
+                font-size: 16px !important;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .onr {
+                font-family: Calibri !important;
+                white-space: normal;
+                word-wrap: break-word;
+                width: 33% !important;
+                height: 90px !important;
+                font-size: 25px !important;
+            }
+
+            .onnr {
+                font-family: Calibri !important;
+                white-space: normal;
+                word-wrap: break-word;
+                height: 90px !important;
+                width: 33% !important;
+                font-size: 16px;
+            }
+
+            footer {
+                height: 9%;
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+            }
+
+
+            #Kategori {
+                font-family: Calibri;
+            }
+
+
+
+            .spn {
+                float: right;
+            }
+
+            .fBtn {
+                width: 22%;
+                float: left;
+                margin-left: 3%;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 25px !important;
+                height: 70px !important;
+                bottom: 1px;
+                position: fixed;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+                font-size: 25px !important;
+            }
+
+            .sBtn {
+                width: 25px;
+                height: 25px;
+                font-size: medium;
+            }
+
+            input[type=radio], input[type=checkbox] {
+                display: none;
+            }
+
+                input[type=radio] + label, input[type=checkbox] + label {
+                    display: inline-block;
+                    margin: -2px;
+                    padding: 4px 12px;
+                    margin-bottom: 0;
+                    font-size: 14px;
+                    line-height: 20px;
+                    color: #333;
+                    text-align: center;
+                    text-shadow: 0 1px 1px rgba(255,255,255,0.75);
+                    vertical-align: middle;
+                    cursor: pointer;
+                    background-color: #f5f5f5;
+                    background-image: -moz-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -webkit-gradient(linear,0 0,0 100%,from(#fff),to(#e6e6e6));
+                    background-image: -webkit-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: -o-linear-gradient(top,#fff,#e6e6e6);
+                    background-image: linear-gradient(to bottom,#fff,#e6e6e6);
+                    background-repeat: repeat-x;
+                    border: 1px solid #ccc;
+                    border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+                    border-color: rgba(0,0,0,0.1) rgba(0,0,0,0.1) rgba(0,0,0,0.25);
+                    border-bottom-color: #b3b3b3;
+                    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff',endColorstr='#ffe6e6e6',GradientType=0);
+                    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+                    -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 1px 2px rgba(0,0,0,0.05);
+                }
+
+                input[type=radio]:checked + label, input[type=checkbox]:checked + label {
+                    background-image: none;
+                    outline: 0;
+                    -webkit-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    -moz-box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15),0 1px 2px rgba(0,0,0,0.05);
+                    background-color: #e0e0e0;
+                }
+
+            .tagBtn {
+                height: 8vh;
+                font-size: 20px;
+                width: 49%;
+                white-space: normal;
+                margin: 0.5%;
+            }
+
+            .cls, .cBtn {
+                height: 8vh;
+                font-size: 20px !important;
+            }
+
+            .mdlBtn {
+                height: 8vh;
+                font-size: 20px !important;
+            }
+
+            .fBtn {
+                font-size: 25px !important;
+                height: 70px !important;
+                bottom: 1px;
+                position: fixed;
+            }
+
+            .msNo {
+                font-size: 20px !important;
+            }
+
+            .total {
+                font-size: 30px !important;
+            }
+
+            .mdlName {
+                font-size: 25px !important;
+            }
+
+            .head {
+                height: 6vh;
+            }
+        }
+            .modal-dialog,
+.modal-content {
+    /* 80% of window height */
+    height: 95%;
+}
+
+.modal-body2 {
+    /* 100% = dialog height, 120px = header + footer */
+    max-height: calc(100% - 230px);
+    overflow-y: scroll;
+}
+        .modal-footer{
+            position:absolute;
+            width:100%;
+            height:70px;
+            bottom:3px;
+        }
+
+
+        .logo {
+            height: 30px !important;
+            width: auto !important;
+        }
+
+        .oBtn {
+            word-wrap: break-word;
+        }
+
+        .lg {
+            position: fixed !important;
+            top: 8px !important;
+            margin-left: 8px !important;
+        }
+
+        .user {
+            position: fixed;
+            top: 14px;
+            float: right;
+            right: 10px;
+            font-size: 15px;
+            font-family: Calibri;
+            margin: 1px 1px 1px 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="head" style="position: fixed; top: 0px; width: 100%">
+        <nav class="navbar navbar-inverse" style="top: 0px;border:none;display: block; background-color: #de3838;border-radius:0 0 0 0; color: #ffffff">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <span class="lg"><img class="logo" src="images/sambapos-icon.png" /></span>
+                    <span style="position: relative;left:35px; top: 20px; text-shadow: none; color: #ffffff" id="masanumara"></span>
+                    <span class="user" style="color:#ffffff;"></span>
+                </div>
+                <div class="collapse navbar-collapse" id="myNavbar">
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div id="Kategori" class="kategori"></div>
+    <div class="urun">
+
+        <div id="Urun"></div>
+    </div>
+    <div id="radio"></div>
+
+    <div data-role="main" class="ui-content">
+    </div>
+    <div class="scrollbar">
+        <ul class="list-group" id="Orders"></ul>
+    </div>
+
+    <div id="model"></div>
+    <div id="model2"></div>
+    <div id="model3"></div>
+    <div class="total" style="font-size: 20px; color: #ca0808; font-weight: bold; position: fixed; right: 30px; top: 92%;" id="value"></div>
+    <footer>
+        <button type='button' class="btn btn-danger fBtn" style="color: white; background-color: #de3838" id="buttonkapat" onclick=kapat()><span>-</span></button>
+    </footer>
+    <script>
+    $("#buttonkapat").html(storage.getItem("close"));
+    </script>
+    <script>
+        function openNav() {
+            $("#Kategori").empty();
+            getMenu(myMenu);
+            document.getElementById("myNav").style.width = "100%";
+        }
+
+        function closeNav() {
+            document.getElementById("myNav").style.width = "0%";
+        }
+    </script>
+</body>
+
+</html>

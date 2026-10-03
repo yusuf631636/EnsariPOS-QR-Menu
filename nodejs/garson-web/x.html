@@ -1,0 +1,641 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <script src="scripts/Jquery.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <script src="scripts/Queries.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="cordova-shim.js"></script>
+    <style>
+        /*#btn {
+            width: 31%;
+            height: 60px;
+            text-align: center;
+            font-size: large;
+            margin: 1px;
+        }
+
+        .giris {
+            background-image: url(images/login-icon.png);
+            background-size: 30px 40%;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .pin {
+            background-image: url(images/logout-icon.png);
+            background-size: 30px 40%;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .user {
+            margin-top: 5%;
+            height: 60px;
+            width: 31%;
+            background-image: url(images/user-setting-icon.png);
+            background-size: 30px;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        #pin {
+            margin-top: 8%;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .center {
+            margin-top: 10%;
+            text-align: center;
+        }
+
+        input[type=button]:disabled {
+            background-color: #ddd;
+        }
+
+        #alert {
+            color: red;
+        }
+
+        .form-control {
+            height: 60px !important;
+            line-height: 50px !important;
+        }
+
+        @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+            .center, #alert {
+                font-size: 14px;
+            }
+        }*/
+    </style>
+    <style>
+        @media only screen and (max-width: 480px) {
+            #btn {
+                width: 31%;
+                height: 60px;
+                text-align: center;
+                font-size: large;
+                margin: 1px;
+            }
+
+            .giris {
+                background-image: url(images/login-icon.png);
+                background-size: 30px 40%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .pin {
+                background-image: url(images/logout-icon.png);
+                background-size: 30px 40%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .user {
+                margin-top: 15%;
+                height: 60px;
+                width: 31%;
+                background-image: url(images/user-setting-icon.png);
+                background-size: 30px;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            #pin {
+                margin-top: 8%;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            .center {
+                margin-top: 10%;
+                text-align: center;
+            }
+
+            input[type=button]:disabled {
+                background-color: #ddd;
+            }
+
+            #alert {
+                color: red;
+            }
+
+            .form-control {
+                height: 60px !important;
+                line-height: 50px !important;
+            }
+        }
+        /*Telefon Manzara modu*/
+        @media only screen and (min-width: 480px) and (max-width:760px) {
+            #btn {
+                width: 31%;
+                height: 50px;
+                text-align: center;
+                font-size: large;
+                margin: 1px;
+            }
+
+            .giris {
+                background-image: url(images/login-icon.png);
+                background-size: 30px 40%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .pin {
+                background-image: url(images/logout-icon.png);
+                background-size: 30px 40%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .user {
+                height: 50px;
+                width: 31%;
+                background-image: url(images/user-setting-icon.png);
+                background-size: 30px;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            #pin {
+                margin-top: 4%;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            .center {
+                margin-top: 8%;
+                text-align: center;
+            }
+
+            input[type=button]:disabled {
+                background-color: #ddd;
+            }
+
+            #alert {
+                color: red;
+            }
+
+            .form-control {
+                height: 50px !important;
+                line-height: 50px !important;
+            }
+        }
+
+        @media only screen and (min-width: 768px) {
+            .center, #alert {
+                font-size: 14px;
+            }
+
+            #btn {
+                width: 31%;
+                height: 50px;
+                text-align: center;
+                font-size: large;
+                margin: 1px;
+            }
+
+            .giris {
+                background-image: url(images/login-icon.png);
+                background-size: 30px 40%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .pin {
+                background-image: url(images/logout-icon.png);
+                background-size: 30px 40%;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .user {
+                height: 50px;
+                width: 31%;
+                background-image: url(images/user-setting-icon.png);
+                background-size: 30px;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            #pin {
+                margin-top: 4%;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            .center {
+                margin-top: 8%;
+                text-align: center;
+            }
+
+            input[type=button]:disabled {
+                background-color: #ddd;
+            }
+
+            #alert {
+                color: red;
+            }
+
+            .form-control {
+                height: 50px !important;
+                line-height: 50px !important;
+            }
+        }
+        .version{
+            position:fixed;
+            text-align:center;
+            bottom:0;
+            justify-content:center;
+            margin-left:5px;
+            font-size:13px;
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align:center">
+        <div style="text-align:center">
+            <img src="images/SambaPOS-icon-Logo.png" style="margin-top:3%;width:100px" />
+        </div>
+
+        <div id="pin" style="text-align: center;">
+            <!--<input input  style="margin-left:18%;width:64%;height:45px;background-color:white" name='pin' id='pswd' placeholder="Password" class="form-control pswd" autofocus />-->
+            <input type="tel" pattern="[0-9]*" inputmode="numeric" style="margin-left: 18%; width: 64%; height: 45px; background-color: white" name='pin' id='pswd' placeholder="-" class="form-control pswd" />
+            <br />
+            <input type="button" onclick="sil()" value="" name='q' id='btn' class="btn btn-default  pin " />
+            <input type="button" onclick="giris()" value="" name='>' id='btn' class="btn btn-default giris" />
+
+        </div>
+    </div>
+
+    <div style="text-align:center;" id="alert"></div>
+    <div class="center">
+        <span class="test"></span>
+    </div>
+    <div id="versionNumber" class="version"></div>
+            <div style="position:fixed;bottom:0px;right:0px;">
+
+                <button  class="btn btn-default" id="buttonconfig" onclick="goster()">
+                 <span>1.1.18</span>
+                </button>
+
+                
+            </div>
+    <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title" id="pswd3">-</h4>
+                </div>
+                <div class="modal-body">
+                    <input type="tel" pattern="[0-9]*" inputmode="numeric" style="background-color:white" name='pin' id='pswd2' placeholder="-" class="form-control pswd" />
+                    <br />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success cnfrm" id="buttonsave"><span>-</span></button>
+                    <button type="button" class="btn btn-default clsBtn" data-dismiss="modal" id="close_label"><span>-</span></button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
+<script>
+    document.addEventListener("deviceready", onDeviceReady, false);
+    var storage = window.localStorage;
+    var email = storage.getItem("email");
+    var latitude = storage.getItem("lat");
+    var longitude = storage.getItem("lng");
+    var licenseid = storage.getItem("licenseid");
+    var online = false;
+    //Tarih başlangıç
+    var dateObj = new Date();    
+    var month = dateObj.getUTCMonth() + 1; //months from 1-12
+    var day = dateObj.getUTCDate();
+    var year = dateObj.getUTCFullYear();    
+    var newdate = month + "/" + day + "/" + year;
+    //Tarih bitiş
+    storage.removeItem("systemDate");//Ana makinadan aldığımız tarihi siliyoruz.
+    //lisans kontrol kısmı
+
+    //Loksayon bilgisi alma başlangıç
+    var onSuccess = function (position) {
+        console.log(position);
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        storage.setItem("lat", position.coords.latitude);
+        storage.setItem("lng", position.coords.longitude);
+        //$(".test").html("lat:"+position.coords.latitude);
+    };
+    function onError(error) {
+        console.log('code: ' + error.code + '\n');
+    }
+    var maxAge = 3000, timeout = 5000;
+    //Loksayon bilgisi alma bitiş
+
+    
+
+    function onDeviceReady() {
+        deviceid = device.uuid;
+        storage.setItem("deviceid", deviceid);
+        document.addEventListener("backbutton", yourCallbackFunction, false);
+        navigator.geolocation.getCurrentPosition(onSuccess, function (error) {
+            console.log("low");
+            navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: true });
+        }, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: false });
+        cordova.getAppVersion.getVersionNumber(function (version) {
+            $("#versionNumber").html('version ' + version);
+        });
+        //loksayon tetikleme
+
+        console.log(storage.getItem("dil"));
+     
+        var file_name;
+        file_name = "lang_tr.json";
+        if (storage.getItem("dil") == 1) file_name = "lang_en.json";
+        if (storage.getItem("dil") == 2) file_name = "lang_tr.json";
+        if (storage.getItem("dil") == 3) file_name = "lang_pt.json";
+        if (storage.getItem("dil") == 4) file_name = "lang_es.json";
+        if (storage.getItem("dil") == 5) file_name = "lang_fr.json";
+        if (storage.getItem("dil") == 6) file_name = "lang_it.json";
+       
+        /* 20.09.2026 kullanıcı isteği: "ayarlar kısmındaki yazılar gitmiş" -
+           jQuery.getJSON(lang_tr.json) sessizce başarısız olursa (WebView'in
+           yerel dosya erişimindeki bir tuhaflık, ağ modu vb.) TÜM ekran
+           başlıkları/etiketleri boş kalıyordu. Artık başarısız olursa da
+           AYNI Türkçe metinler burada gömülü olarak (hardcoded) uygulanıyor -
+           etiketler HER ZAMAN görünür. */
+        function applyLangData(data) {
+            storage.setItem("ok",data.ok);
+            storage.setItem("no_connection", data.no_connection);
+            storage.setItem("connection_error", data.connection_error);
+            storage.setItem("program_settings", data.program_settings);
+            storage.setItem("message_server_ip", data.message_server_ip);
+            storage.setItem("sambamarket_email_lan", data.sambamarket_email);
+            storage.setItem("ticket_type_lan", data.ticket_type);
+            storage.setItem("terminal_lan", data.terminal);
+            storage.setItem("department_lan", data.department);
+            storage.setItem("entity_screen_name", data.entity_screen_name);
+            storage.setItem("entity_type", data.entity_type);
+            storage.setItem("menu_lan", data.menu);
+            storage.setItem("print_bill_automation_name", data.print_bill_automation_name);
+            storage.setItem("ticket_tag", data.ticket_tag);
+            storage.setItem("ask",data.ask);
+            storage.setItem("ask_when_the_ticket_was_closed", data.ask_when_the_ticket_was_closed);
+            storage.setItem("exit_option", data.exit_option);
+            storage.setItem("log_out_when_ticket_was_closed", data.log_out_when_ticket_was_closed);
+            storage.setItem("select_db_language", data.select_db_language);
+            storage.setItem("english_db", data.english_db);
+            storage.setItem("save", data.save);
+            storage.setItem("user_not_found", data.user_not_found);
+            storage.setItem("login_failed", data.login_failed);
+            storage.setItem("please_wait", data.please_wait);
+            storage.setItem("select_ticket", data.select_ticket);
+            storage.setItem("close",data.close);
+            storage.setItem("save", data.save);
+            storage.setItem("merge", data.merge);
+            storage.setItem("ticket", data.ticket);
+            storage.setItem("message_1", data.message_1);
+            storage.setItem("message_2", data.message_2);
+            storage.setItem("warning", data.warning);
+            storage.setItem("user", data.user);
+            storage.setItem("total", data.total);
+            storage.setItem("an_error_occured", data.an_error_occured);
+            storage.setItem("add_quantity", data.add_quantity);
+            storage.setItem("cancel", data.cancel);
+            storage.setItem("ticket_note", data.ticket_note);
+            storage.setItem("add_ticket", data.add_ticket);
+            storage.setItem("add_order", data.add_order);
+            storage.setItem("change_table", data.change_table);
+            storage.setItem("select_reasons", data.select_reasons);
+            storage.setItem("select_table", data.select_table);
+            storage.setItem("void", data.void);
+            storage.setItem("cancel_void", data.cancel_void);
+            storage.setItem("gift", data.gift);
+            storage.setItem("cancel_gift", data.cancel_gift);
+            storage.setItem("password", data.password);
+            storage.setItem("message_3", data.message_3);
+            storage.setItem("message_3_1", data.message_3_1);
+            storage.setItem("message_4", data.message_4);
+            storage.setItem("email_lan", data.email);
+            storage.setItem("config",data.config);
+            storage.setItem("new", data.new);
+
+            storage.setItem("ip_cannot_empty", data.ip_cannot_empty);
+            storage.setItem("please_config", data.please_config);
+            storage.setItem("neworder", data.neworder);
+            storage.setItem("orderno", data.orderno);
+            storage.setItem("submitted", data.submitted);
+            storage.setItem("technical_problem", data.technical_problem);
+            storage.setItem("another_user", data.another_user);
+            storage.setItem("portion", data.portion);
+
+    $("#pswd").attr("placeholder", storage.getItem("password")).blur();
+    $("#pswd2").attr("placeholder", storage.getItem("password")).blur();
+    $("#pswd3").html(storage.getItem("config"));
+    $("#buttonconfig span").html(storage.getItem("config"));
+    $("#close_label span").html(storage.getItem("cancel"));
+    $("#buttonsave span").html(storage.getItem("ok"));
+        }
+        var FALLBACK_LANG_TR = {
+            "ok":"OK","no_connection":"Internet Yok","connection_error":"Bağlantı Hatası",
+            "program_settings":"Program Ayarları","message_server_ip":"Mesaj Sunucu IP",
+            "sambamarket_email":"SambaMarket Email","ticket_type":"Adisyon Tipi","terminal":"Terminal",
+            "department":"Departman","entity_screen_name":"Varlık Ekranı Adı","entity_type":"Varlık Tipi",
+            "menu":"Menu","print_bill_automation_name":"Hesap Yaz Otomasyon Komutu","ticket_tag":"Adisyon Etiketi",
+            "ask":"Sorulsun mu?","ask_when_the_ticket_was_closed":"Adisyon açılırken sorulsun mu?",
+            "exit_option":"Çıkış Seçeneği","log_out_when_ticket_was_closed":"Adisyon Kapatılınca Çıkış Yap",
+            "select_db_language":"Dil Seçiniz","english_db":"Türkçe DB","save":"Kaydet",
+            "user_not_found":"Kullanıcı Bulunamadı","login_failed":"Giriş Hatalı","please_wait":"Lütfen Bekleyiniz.",
+            "select_ticket":"Adisyon Seçiniz","close":"Kapat","merge":"Birleştir","ticket":"Adisyon",
+            "message_1":"Cihaz tarihi ve sunucu tarih bilgisi farklı. Lütfen kontrol edin.",
+            "message_2":"Güncelleme ve lisans kontrolü süresi sona erdi. Lütfen cihazı internete bağlayarak uygulamayı tekrar başlatın.",
+            "warning":"Uyarı","user":"Kullanıcı","total":"Toplam","an_error_occured":"Hata Oluştu",
+            "add_quantity":"Adet Giriniz","cancel":"İptal","ticket_note":"Adisyon Notu","add_ticket":"Adisyon Ekle",
+            "add_order":"Sipariş Ekle","change_table":"Masa Değiştir","select_reasons":"Sebep Seçiniz",
+            "select_table":"Masa Seçiniz","void":"İade","cancel_void":"İade İptal","gift":"İkram",
+            "cancel_gift":"İkram İptal","password":"Şifre",
+            "message_3":"SambaPOS Mobile Client güncellemeleri ve lisansı",
+            "message_3_1":" gün içerisinde kontrol edecek. Lütfen cihazınızı internete bağlayınız ",
+            "message_4":"Güncelleme ve Lisans kontrol süresi sonra erdi. Lütfen cihazınızı intenete bağlayıp uygulamayı tekrar çalıştırın.",
+            "email":"Email","config":"Ayarlar","new":"Yeni","ip_cannot_empty":"IP Adresi Boş Olamaz",
+            "please_config":"Lütfen Ayarlara girerek tüm alanları doldurunuz","neworder":"Yeni Sipariş",
+            "orderno":"Sip.No","submitted":"Gönderildi","technical_problem":"Adisyon Teknik Bir Arızandan Dolayı Yüklenemedi",
+            "another_user":"Adisyon Başka Bir Kullanıcı Tarafından Değiştirilmiş. Son Değişiklikler İptal Edilecek.",
+            "portion":"Porsiyon"
+        };
+        jQuery.getJSON(file_name, function (data) {
+            applyLangData(data);
+        }).fail(function () {
+            console.log('lang json yuklenemedi, gomulu Turkce metinler kullaniliyor');
+            applyLangData(FALLBACK_LANG_TR);
+        });
+
+    }
+    //Config tuşunun fonksiyonu
+    function goster() {
+        navigator.geolocation.getCurrentPosition(onSuccess, function (error) {
+            console.log("Failed to retrieve high accuracy position - trying to retrieve low accuracy");
+            navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: true });
+        }, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: false });
+        $("#myModal").modal('show');
+        $('#myModal').on('shown.bs.modal', function () {
+            $("#pswd2").focus();
+        })
+    }
+    //Geri butonunun çalışmamasını sağlayan fonksiyon.
+    function yourCallbackFunction() {
+
+    }
+    var ttl;
+    //ttl değeri cihazın offline olarak kaç gün geçirdiğini sayar.
+    function hesapla() {
+        var lastdate = storage.getItem("lastControl");
+        ttl = storage.getItem("TTL");
+        var dateksi = new Date(lastdate);
+        var dateyeni = new Date(newdate);
+        var timediff = Math.abs(dateyeni.getTime() - dateksi.getTime());
+        var diffDays = Math.ceil(timediff / (1000 * 3600 * 24));
+        ttl = dateksi > dateyeni ? 0 : ttl - diffDays;
+    }
+    $(function () {
+        //var query = { query: "{'query':{'username':'ornek@example.com','licencekey':'MobileClient','list':[{'name':'appkey','value':'0000000000000000','lat':1500,'lng':1600}]}}" };
+        //$.post('https://b2b.sambapos.com/Site/Api/LicenceUpdate', query,
+        //            function (data) {
+        //                console.log(data);
+        //            });
+        //console.log(query);
+        
+        var query2 = { query: "{'query':{'username':'ornek@example.com','licencekey':'MobileClient'}}" };
+        $.post('https://b2b.sambapos.com/Site/Api/LicenceList', query2, function (data) {
+            console.log(data);
+        });
+        $.ajax({
+            url: 'http://www.google.com',
+            success: function (data) {
+                online = true;
+            },
+            error: function (data) {
+                online = true;
+            }
+        });
+        hesapla();
+    });
+    function git() {
+        window.location = "kullanici.html";
+    }
+    $('.cnfrm').click(function () {
+        var pwd = $('#pswd2').val();
+        if (pwd == 150299) {
+            window.location = 'Config.html';
+        } else {
+            navigator.notification.alert(storage.getItem("login_failed"), function () { }, storage.getItem("login_failed"), "Ok");
+            $('#pswd2').empty();
+        }
+    });
+    function ekle(e) {
+        var numara = e.value;
+        var pin = $("#pswd").val();
+        $("#pswd").val(pin + numara);
+    }
+    function sil() {
+        $("#pswd").val("");
+    }
+    function girisana() {
+
+        /* 26.09.2026 duzeltmesi: bu kontrol eskiden "ip" alaninin doldurulmus
+           olmasini SAYFANIN Config.html'den GECTIGINE dair tek kanit olarak
+           kullaniyordu. IP alani artik KULLANILMIYOR (her zaman /samba-lan
+           koprusu) ve BILEREK BOS - kullanici bulgusu: "ıp alanı boş olamaz
+           diyor". Gercek tamamlanma kaniti artik "terminal" (Config.html
+           otomatik doldurup kaydediyor). */
+        if (storage.getItem('terminal')) {
+            var a = $("#pswd").val();
+            if (a == "") {
+                
+                navigator.notification.alert(storage.getItem("enter_password"), function () { }, storage.getItem("login_failed"), storage.getItem("ok"));
+                
+                return false;
+            } else {
+                storage.setItem('password', a);
+                window.location = "authorize.html";
+            }
+        } else {
+            navigator.notification.alert(storage.getItem("please_config"), function () { }, storage.getItem("ip_cannot_empty"), storage.getItem("ok"));
+            
+        }
+    }
+    function licenceControl(uuid, email, lat, lng, licenseid, callback) {
+        if (online) {
+            //
+            var query;
+            if (licenseid != null ) {
+                 callback(false)    
+             }
+            else
+            {
+                callback(true)
+            }
+        } 
+
+    }
+    //authorize sayfasına yönlendirme
+    function giris() {
+        if (online) {
+            licenceControl(deviceid, email, latitude, longitude, licenseid, function (result) {
+                storage.setItem("TTL", 18);
+                storage.setItem("lastControl", newdate);
+                var success = result;
+                if (success != true) {
+                    navigator.notification.alert(storage.getItem("licence_not_found"),
+                        function () {
+                            storage.removeItem("licence");
+                            window.location = 'Config.html';
+                        },
+                        storage.getItem("licence_error"),
+                        storage.getItem("ok"));
+                } else {
+                    girismain();
+                }
+            });
+        } else {
+            storage.setItem("lastControl", newdate);
+            storage.setItem("TTL", ttl);
+            girismain();
+        }
+        
+    }
+    function cıkıs() {
+
+    }
+    function girismain() {
+        if (ttl > 0) {
+            if (ttl <= 3) {
+               
+                girisana();
+                           } else {
+                girisana();
+            }
+
+        } else {
+            
+                girisana();
+            
+        }
+    }
+
+</script>

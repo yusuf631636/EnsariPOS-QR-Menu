@@ -1,0 +1,89 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <script src="scripts/Jquery.min.js"></script>
+    <script src="scripts/jquery.signalR-2.2.0.min.js"></script>
+    <script src="scripts/Queries.js"></script>
+    <script src="scripts/SignalR.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="cordova-shim.js"></script>
+    <script>
+        //Kullanıcının SambaPosa tanımlanması ve üyeliğine izin verilmesi işlemleri.
+        var storage = window.localStorage;
+        var password = storage.getItem('password');
+        //var username = storage.getItem("username");
+        var myVar;
+        function start() {
+            myVar = setTimeout(function () {
+                navigator.notification.alert(
+                    (storage.getItem("connection_error") || 'Bağlantı Hatası') + ' (' + config.GQLserv + ' - 20sn içinde cevap yok)',
+                    function () { window.location = "x.html"; },
+                    storage.getItem("connection_error"),
+                    storage.getItem("ok"));
+            },
+                20000);
+        }
+
+        function stop() {
+            clearTimeout(myVar);
+        }
+        $(function () {
+            start();
+            Authenticate("mobileclient", "0000", function (access, refresh) {
+                console.log(access);
+                storage.setItem("accessToken", access);
+                storage.setItem("refreshToken", refresh);
+                getUser(password, function (result) {
+                    console.log(password);
+                    console.log(result);
+                    stop();
+                    if (result.name != "*") {
+                        storage.setItem("username", result.name);
+                        if (storage.getItem("terminalId")) {
+                            unregisterTerminal(storage.getItem("terminalId"), function (result) {
+                                window.location = "index.html";
+                            });
+                        } else {
+                            window.location = "index.html";
+                        }
+                    } else {
+                       
+                        navigator.notification.alert(storage.getItem("user_not_found"), function () { window.location = "x.html"; }, storage.getItem("login_failed"), storage.getItem("ok"));
+                       
+                        
+                    }
+                    
+                });
+            },
+                function (fail, error) {
+                    navigator.notification.alert(error,
+                        function () {
+                            window.location = "x.html";
+                        },
+                        fail,
+                        storage.getItem("ok"));
+                });
+
+
+            //Authorize(password, function (result) {
+            //    if (accessToken != null) {
+            //        storage.setItem("key", accessToken);
+            //        window.location = "index.html";
+            //    } else {
+            //        alert("Password Error");
+            //        window.location = "x.html";
+            //    }
+            //});
+        });
+    </script>
+</head>
+<body>
+    <h3 style="text-align: center" class="error" id="please_wait_caption">Please Wait...</h3>
+    <script>
+    $("#plase_wait_caption").html(storage.getItem("please_wait"));
+    </script>
+</body>
+
+</html>

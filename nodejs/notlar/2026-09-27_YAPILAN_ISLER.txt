@@ -1,0 +1,162 @@
+=====================================================================
+  YAPILAN İŞLER – 27.09.2026
+  Öz Urfa Yusuf Usta – SambaPOS / AlfaPOS / QR Menü
+=====================================================================
+
+Bu klasörde:
+  YAPILAN_ISLER.txt           -> Bu dosya (tüm işlerin listesi)
+  YAPILACAKLAR.txt            -> Sizin ve lisans firmasının yapması gerekenler
+  KURULUM_DEVIR.md            -> Kurulum programını derleyecek kişi / Claude için talimat
+  QRMenu\onceki_haller\       -> Değişen dosyaların ÖNCEKİ halleri (index.html dahil)
+  QRMenu\DEGISIKLIKLER.md     -> QR Menü değişikliklerinin teknik açıklaması (lisans firması için)
+  QRMenu\dosyalar\            -> Değiştirilen QR Menü dosyalarının son hali
+  QRMenu\farklar\             -> Her dosyada neyin değiştiği (satır satır, .diff)
+  SambaPOS_Bakim\             -> SambaPOS bakım aracı (bat + sql dosyaları)
+
+Güvenlik nedeniyle config.json (SQL şifresi ve aktivasyon anahtarı içerir)
+pakete KONMADI.
+
+
+---------------------------------------------------------------------
+A) SAMBAPOS VERİTABANI
+---------------------------------------------------------------------
+1. Kapanmayan 1862 numaralı adisyon silindi (26.09 QR Menü paket
+   siparişi, 470 TL). Silmeden önce veritabanında bak_..._19544
+   tablolarına yedek alındı.
+
+2. Log dosyası küçültüldü: SAMBAPOS5 log dosyası 8,9 GB'tan 520 MB'a indi.
+   Veritabanı SIMPLE kurtarma moduna alındı (log bir daha şişmez).
+   Her gece alınan tam yedek aynen devam ediyor.
+
+3. Açık QR adisyonlarının sürüm alanı düzeltildi (paketçi/ödeme hatası
+   için, bkz. C-1).
+
+
+---------------------------------------------------------------------
+B) SAMBAPOS BAKIM ARACI  (Belgelerim\SambaPOS_Bakim)
+---------------------------------------------------------------------
+- SambaPOS_Bakim.bat'a çift tıklayınca kendiliğinden:
+  1-6. SQL Server'ları ve tüm SambaPOS/AlfaPOS veritabanlarını bulur
+       (SAMBAPOS5, AlfaPOS5 vb.; başka bilgisayarlarda da çalışır)
+  7.   Her veritabanı için sade bir "karne" gösterir:
+       [OK] sorun yok, [!!] kontrol edilmeli, [i] bilgi
+  8.   Genel sonucu tek cümleyle yazar, raporu "raporlar" klasörüne kaydeder
+- Menü: adisyon silme (numara ile, yedekli, EVET onaylı), taramayı
+  tekrarlama, rapor açma, bütünlük kontrolü (DBCC), başka bilgisayardaki
+  sunucuyu ekleme.
+- Nasıl kullanılacağı klasördeki BENIOKU.txt dosyasında.
+
+
+---------------------------------------------------------------------
+C) QR MENÜ – HATA DÜZELTMELERİ
+---------------------------------------------------------------------
+1. Paketçi seçerken "Adisyon Paketçi-1'a taşınmış" ve ödeme alırken
+   "Adisyonda bir değişiklik yapılmış -exp3" hataları düzeltildi.
+   (QR Menü adisyonun sürüm damgasını milisaniyeli yazıyordu, SambaPOS
+   tam saniye bekliyor.)
+
+2. "Paket Durumu" otomatik güncellemesi çalışmıyordu (her 20 saniyede
+   SQL hatası). Düzeltildi – ödemesi alınan paketler "Bekliyor"da kalmaz.
+
+3. Servis açılmıyordu: config.json dosyasının sonundaki "}" eksikti.
+   Düzeltildi.
+
+4. Bulut bağlantısı kapalıydı: aktivasyon anahtarı config.json'a eklendi,
+   menü artık menu.ornek-alanadi.com/ozurfam adresinden açılıyor.
+
+5. Kurulum sırasında silinen dükkan ayarları geri yüklendi (firma
+   bilgileri, 28 teslimat bölgesi, mesafe ücretleri, mutfak yazıcısı
+   eşleştirmeleri, sipariş kabul ayarları).
+
+6. Link sonunda "/" olmadan açılınca "Sipariş Ver" butonu "Bulunamadı"
+   diyordu ve görseller gelmiyordu. Düzeltildi.
+
+7. Ana sayfada tüm ürün resimleri eksikti ve fiyatlar eskiydi. Menü
+   SambaPOS'tan yeniden oluşturuldu.
+
+8. Sipariş sayfasındaki "Sepeti Temizle" butonu çalışmıyordu. Düzeltildi.
+
+9. Kampanyalar ürünlere bağlandı: "Sepete Ekle"ye basınca doğrudan
+   sepete ekleniyor:
+     - 10 kıymalı cantık 3 Ayran  -> 10'lu Kıymalı Cantık Menü
+     - 10 Lahmacun Menü + Ayran   -> 10'lu Lahmacun Menü
+   (DİKKAT: 10'lu Kıymalı Cantık Menü'nün SambaPOS'taki fiyatı 0 TL,
+   SambaPOS'tan 800 TL olarak girilmeli.)
+
+
+---------------------------------------------------------------------
+D) QR MENÜ – YENİ ÖZELLİKLER VE TASARIM
+---------------------------------------------------------------------
+1. YENİ MÜŞTERİ ARAYÜZÜ (menu.ornek-alanadi.com/ozurfam/)
+   - Açılış: kampanyalar, Paket Servis / Yol Tarifi / Çalışma Saatleri
+     kartları, arama, fotoğraflı kategori kartları.
+   - Kategoriye girince: telefonda üstte kategori çubuğu + altta sepet;
+     bilgisayarda solda kategoriler, ortada ürünler, sağda sepet.
+   - Porsiyon/adet seçim penceresi, logo rozeti, gece modu.
+   - Eski sayfa: menu.ornek-alanadi.com/ozurfam/eski
+
+2. KIOSK YENİ TASARIM (/siparis?kiosk=1)
+   - Karşılama ekranı (fotoğraf slaytı + "Burada Yiyeceğim / Paket
+     Alacağım" seçimi; seçim sipariş notuna yazılır).
+   - Büyük ürün kartları, sabit sepet paneli, yatay ve dikey ekran desteği.
+   - 60 sn işlem yoksa "Hâlâ orada mısınız?" geri sayımı.
+   - Sipariş sonrası büyük sipariş numarası.
+
+3. KIOSK İÇİN AYRI ONAY AYARI (Admin > Ayarlar > Sipariş gönderme)
+   - "Kiosk siparişlerini onay beklemeden doğrudan SambaPOS'a gönder"
+     İşaretli değilse kiosk siparişi önce panelde onaya düşer.
+
+4. TV MENÜ YENİ TASARIM (/tv)
+   - Vitrin sayfaları (büyük ürün + 4 kart) ve fiyat panoları dönüşümlü.
+   - Menüye giden gerçek QR kodu, telefon, saat, köz kıvılcımı efekti.
+
+5. ADMİN – GÖRSELİ OLMAYAN ÜRÜNLER
+   - Menü listesinde "Sadece görseli olmayanlar" filtresi ve kırmızı
+     "Görsel yok" etiketi (şu an 88 üründen 54'ünün görseli yok).
+
+6. Sipariş sayfası ve eski ana sayfa toparlandı (bilgisayarda taşma
+   düzeltildi, geniş ekranda çok sütunlu düzen).
+
+
+---------------------------------------------------------------------
+E) YAPILMASI GEREKENLER
+---------------------------------------------------------------------
+[ ] Hizmetler > AlfaPOSQRMenuYerel > Yeniden Başlat
+    (yeni ana sayfa, kiosk ayarı, paketçi/ödeme düzeltmesi ve TV QR'ı
+    bundan sonra devreye girer)
+[ ] Yeniden başlattıktan sonra test siparişi verip paketçi atama ve
+    ödeme almayı deneyin
+[ ] SambaPOS'ta fiyatı 0 olan ürünlerin fiyatını girin
+    (10'lu Kıymalı / Kuşbaşılı / Karışık Cantık Menü, FuseTea,
+    1 KĞ Çiğköfte, 3 Kuşbaşılı Kaşarlı Cantık & İçecek Menü)
+[ ] Eksik ürün görsellerini admin panelinden yükleyin
+[ ] Lisans firmasına QRMenu klasörünü iletin – QR Menü kurulumu tekrar
+    çalıştırılırsa bu düzeltmeler silinir; kalıcı olması için kaynak
+    koda işlenmeleri gerekir.
+
+
+---------------------------------------------------------------------
+F) ALINAN YEDEKLER  (C:\Program Files (x86)\AlfaPOS\QRMenu)
+---------------------------------------------------------------------
+config.json.bak-20260927-anahtar / -ayarlar / -kampanya
+sambapos.js.bak-20260927 / -surum
+server.js.bak-20260927 / -kiosk
+siparis.html.bak-20260927 / -kiosk
+index.html.bak-20260927 / -duzen
+tv.html.bak-20260927
+admin\index.html.bak-20260927 / -gorsel
+
+---------------------------------------------------------------------
+G) SON EKLEMELER
+---------------------------------------------------------------------
+1. Logo: PNG yüklenince logo.png olarak kaydediliyor ama yeni arayüz, TV,
+   iletişim ve garson sayfaları hâlâ logo.jpg arıyordu. Artık yükleme tüm
+   sayfaları güncelliyor; logo.jpg / logo.png hangisi varsa o veriliyor.
+2. Logo her yerde kırpılmadan, beyaz plaka içinde gösteriliyor (yeni
+   arayüz, sipariş, kiosk karşılama ve başlık, TV, iletişim, eski ana sayfa).
+3. Tüm müşteriler için: yeni ana sayfa, TV ve kiosk artık firma adı,
+   telefon ve sosyal medyayı ayarlardan (/api/site-info) okuyor. Ayarı
+   boş olan başka bir restoranda Öz Urfa bilgileri görünmez.
+4. Kurulum programını yeniden derleyecek kişi için KURULUM_DEVIR.md
+   eklendi (hangi dosya nasıl aktarılır, temalar, tüm özellikler, test
+   listesi).

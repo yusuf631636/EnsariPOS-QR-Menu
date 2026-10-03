@@ -1,0 +1,187 @@
+/* kendi-restoranim-kurye\sql.js'deki desenin gelistirilmis hali.
+   ONEMLI BULGU (bu oturumda canli testte yakalandi): modern "go-sqlcmd" (winget
+   Microsoft.Sqlcmd - sqlcmd bulunamayan makinelerde otomatik yedek olarak kullanilan
+   arac, bkz. asagida) stdout'a PIPE edilince Turkce karakterleri ("ç" gibi) SESSIZCE
+   "?" ile degistiriyor - codepage secmekle duzelmeyen, KAYIP bir hata (veri kaynakta
+   zaten "?" olarak geliyor). Eski ODBC tabanli sqlcmd'de bu sorun yoktu (cp857 ile
+   dogru okunuyordu) ama artik HER IKI aracin da guvenle calismasi icin TAMAMEN farkli
+   bir yontem kullaniyoruz: sqlcmd'ye "-u -o <dosya>" ile ciktiyi STDOUT'A DEGIL bir
+   DOSYAYA, gercek UTF-16LE (Unicode) olarak yazdiriyoruz, sonra o dosyayi okuyoruz.
+   Girdi (sorgu) dosyasi da ayni sebeple UTF-16LE + BOM ile yaziliyor. Boylece hicbir
+   codepage tahmini/varsayimi kalmiyor - dogrulandi (ç/ş/ğ/ı/İ/Ö/Ü hepsi dogru donuyor). */
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const crypto = require('crypto');
+const { execFile } = require('child_process');
+
+/* Guvenlik (16.09.2026): SQL sifresi artik config.json'a degil servis ortam degiskenine
+   (SAMBAPOS_SQL_PASSWORD) yazilir (bkz. install-services.ps1/UltraPaketci.iss). Elle
+   "npm start"/baslat.bat ile calistiran bir gelistirici icin de ayni degiskeni her
+   seferinde terminalde elle export etmek zorunda kalmasin diye - dotenv paketi EKLEMEDEN
+   (framework'suz yapi korunur) - proje kokunde varsa basit bir ".env" dosyasi (KEY=VALUE,
+   satir satir) okunup SADECE HENUZ process.env'de olmayan degiskenler icin uygulanir.
+   Dosya opsiyoneldir, yoksa hicbir sey degismez; servis calistirmasinda zaten
+   AppEnvironmentExtra ortamdan gelir, .env dosyasina hic gerek kalmaz. */
+(function loadDotEnvIfPresent() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+    if (key && !(key in process.env)) process.env[key] = value;
+  }
+})();
+
+const config = fs.existsSync(path.join(__dirname, 'config.json')) ? JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8')) : {};
+
+/* Veritabanini otomatik bul (19.09.2026, kullanici istegi: "veri tabanını
+   otomatik bulsun, genelde bilgimiz C:\ProgramData\SambaPOS\SambaPOS5 yada
+   C:\ProgramData\AlfaPOS\AlfaPOS5'te oluyor, ikisini sorgulasın"). SambaPOS/
+   AlfaPOS KENDI SQL baglanti bilgisini bu iki yoldan birindeki XML ayarlar
+   dosyasina (<ConnectionString>Data Source=...; User Id=...; Password=...;
+   Database=...;</ConnectionString>) zaten yaziyor - bu makinede CANLI
+   dogrulandi. config.json'da server BOS birakilmissa (kurulum sihirbazi
+   veya elle duzenleme) SADECE O ZAMAN denenir - config.json'da GERCEKTEN
+   bir deger varsa ASLA ustune yazilmaz. */
+function detectSambaposConnectionString() {
+  const candidates = [
+    'C:\\ProgramData\\SambaPOS\\SambaPOS5\\SambaSettings.txt',
+    'C:\\ProgramData\\AlfaPOS\\AlfaPOS5\\AlfaSettings.txt'
+  ];
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const xml = fs.readFileSync(file, 'utf8');
+      const match = /<ConnectionString>([^<]*)<\/ConnectionString>/.exec(xml);
+      if (!match || !match[1].trim()) continue;
+      const parts = {};
+      for (const piece of match[1].split(';')) {
+        const eq = piece.indexOf('=');
+        if (eq === -1) continue;
+        parts[piece.slice(0, eq).trim().toLowerCase()] = piece.slice(eq + 1).trim();
+      }
+      if (!parts['data source']) continue;
+      return { server: parts['data source'], database: parts['database'] || '', user: parts['user id'] || '', password: parts['password'] || '', foundIn: file };
+    } catch { /* okunamadi/bozuk - sonraki adaya gec */ }
+  }
+  return null;
+}
+const detected = !config.server ? detectSambaposConnectionString() : null;
+if (detected) console.log(new Date().toISOString(), `SambaPOS bağlantısı otomatik bulundu (${detected.foundIn}): ${detected.server}/${detected.database}`);
+
+const SQL_SERVER = process.env.SAMBAPOS_SQL_SERVER || config.server || (detected && detected.server) || 'localhost';
+const SQL_DATABASE = process.env.SAMBAPOS_DB || config.database || (detected && detected.database) || 'SAMBAPOS5';
+const SQL_USER = process.env.SAMBAPOS_SQL_USER || config.user || (detected && detected.user) || '';
+const SQL_PASSWORD = process.env.SAMBAPOS_SQL_PASSWORD || config.password || (detected && detected.password) || '';
+
+/* Guvenlik (16.09.2026): SQL sifresi artik ONCELIKLE servis ortam degiskeninden
+   (SAMBAPOS_SQL_PASSWORD - install-services.ps1 tarafindan NSSM AppEnvironmentExtra
+   ile ayarlanir) okunur, config.json SADECE eski kurulumlar/manuel calistirma icin
+   yedek. Bir SQL kullanicisi tanimliysa ama sifre YOKSA sessizce Windows kimlik
+   dogrulamaya (-E) dusup yanlis/eksik yapilandirmayi gizlemek yerine, uygulama HEMEN
+   ve ACIK bir hatayla baslamayi reddeder - sifre girilmeyi unutulmus bir kurulumun
+   "sanki calisiyormus gibi" SQL'e Windows kimligiyle baglanmaya calisip anlasilmaz
+   sekilde basarisiz olmasindansa. */
+if (SQL_USER && !SQL_PASSWORD) console.warn('SQL parolası yok; Windows kimlik doğrulaması (-E) kullanılacak.');
+
+/* "spawn sqlcmd ENOENT": bazi makinelerde sqlcmd PATH'te olsa da Windows SERVISLERI
+   (bu SCM'nin kendi baslama anindan miras aldigi ortamdan dolayi) PATH'e sonradan
+   eklenen bir seyi goremeyebilir. config.json'da elle "sqlcmdPath" verilmisse o
+   kullanilir; yoksa once duz "sqlcmd" (PATH) denenir, calismazsa bilinen kurulum
+   konumlari sirayla denenir.
+
+   15.09.2026 CANLI BULGU: modern "go-sqlcmd" (yukaridaki "sqlcmd" PATH araci),
+   restoranin ESKI bir SQL Server surumune (2012/2014 gibi, SambaPOS kurulumlarinda
+   COK YAYGIN) baglanmaya calisirken "TLS Handshake failed: tls: server selected
+   unsupported protocol version" hatasi verip TAMAMEN REDDEDIYOR - eski surumler
+   sadece TLS 1.0/SSL destekliyor, modern Go TLS kutuphanesi bunu guvenlik geregi
+   kabul etmiyor. Bu SADECE ENOENT (dosya bulunamadi) DEGIL, calisan ama basarisiz
+   olan bir arac - bu yuzden asagidaki fallback artik ENOENT'e ozel degil, HERHANGI
+   bir hataya (baglanti/TLS dahil) tetikleniyor. SQL Server'in KENDI eski surumune ait
+   Native Client sqlcmd'si (ODBC tabanli, eski TLS'i native destekler) bu sorunu
+   yasamiyor - versiyon numarasi bilinmediginden (musteride hangi SQL Server surumu
+   kurulu oldugunu ONCEDEN bilemeyiz) TUM yaygin surumler (2012=110, 2014=120,
+   2016=130, 2017=140, 2019=150) sirayla denenir. */
+const KNOWN_SQLCMD_PATHS = [
+  'C:\\Program Files\\Sqlcmd\\sqlcmd.exe',
+  path.join(process.env.LOCALAPPDATA || '', 'Microsoft\\WinGet\\Links\\sqlcmd.exe'),
+  'C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\180\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files (x86)\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files\\Microsoft SQL Server\\140\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files\\Microsoft SQL Server\\120\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files\\Microsoft SQL Server\\110\\Tools\\Binn\\SQLCMD.EXE',
+  'C:\\Program Files (x86)\\Microsoft SQL Server\\110\\Tools\\Binn\\SQLCMD.EXE',
+];
+let resolvedSqlcmd = config.sqlcmdPath || null;
+let triedFallback = false;
+
+const BOM = '\ufeff';
+function stripBom(text) { return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text; }
+
+function runSqlcmd(exe, args, cb) {
+  execFile(exe, args, { windowsHide: true, maxBuffer: 10 * 1024 * 1024 }, cb);
+}
+
+function sql(query, { wide = false } = {}) {
+  return new Promise((resolve, reject) => {
+    const auth = SQL_USER && SQL_PASSWORD ? ['-U', SQL_USER, '-P', SQL_PASSWORD] : ['-E'];
+    const trust = config.options && config.options.trustServerCertificate ? ['-C'] : [];
+    const widthFlag = wide ? ['-y', '8000'] : ['-W'];
+    const tag = crypto.randomBytes(8).toString('hex');
+    const inFile = path.join(os.tmpdir(), `gks-in-${tag}.sql`);
+    const outFile = path.join(os.tmpdir(), `gks-out-${tag}.txt`);
+    fs.writeFileSync(inFile, BOM + query, 'utf16le');
+    const args = ['-S', SQL_SERVER, ...auth, ...trust, '-d', SQL_DATABASE, '-h', '-1', ...widthFlag, '-s', '|', '-u', '-o', outFile, '-i', inFile];
+
+    const cleanup = () => { fs.unlink(inFile, () => {}); fs.unlink(outFile, () => {}); };
+    const finish = (e, err) => {
+      const stderr = String(err || '');
+      let stdout = '';
+      try { stdout = stripBom(fs.readFileSync(outFile, 'utf16le')); } catch { /* olusmadiysa bos kalir */ }
+      cleanup();
+      const looksLikeError = /^Msg \d+, Level \d+, State \d+/m.test(stdout);
+      if (e) return reject(new Error(stderr.trim() || stdout.trim() || e.message));
+      if (looksLikeError) return reject(new Error(stdout.trim()));
+      resolve(stdout.trim());
+    };
+
+    /* Adaylari SIRAYLA dener (ilk BULUNAN degil, ilk CALISAN) - bircok SQL
+       Server surumunun Native Client'i ayni anda kurulu olabilir, hangisinin
+       bu restoranin sunucusuyla GERCEKTEN konusabildigini sadece deneyerek
+       anlariz. Basarili olan surecin GERI KALANI icin (config.json'a hic
+       elle sqlcmdPath yazmadan) onbelleklenir. */
+    const tryCandidates = (candidates, idx, lastErr) => {
+      if (idx >= candidates.length) return finish(lastErr || new Error('sqlcmd bulunamadı.'), null);
+      const exe = candidates[idx];
+      runSqlcmd(exe, args, (e, out, err) => {
+        if (e) return tryCandidates(candidates, idx + 1, e);
+        resolvedSqlcmd = exe;
+        finish(e, err);
+      });
+    };
+
+    runSqlcmd(resolvedSqlcmd || 'sqlcmd', args, (e, out, err) => {
+      if (e && !resolvedSqlcmd) {
+        const candidates = KNOWN_SQLCMD_PATHS.filter(p => p && fs.existsSync(p));
+        if (candidates.length) return tryCandidates(candidates, 0, e);
+      }
+      finish(e, err);
+    });
+  });
+}
+function rows(text, keys) {
+  return text ? text.split(/\r?\n/).filter(Boolean).map(line => {
+    const v = line.split('|').map(x => x.trim());
+    return Object.fromEntries(keys.map((k, i) => [k, v[i] || '']));
+  }) : [];
+}
+
+module.exports = { sql, rows, config };

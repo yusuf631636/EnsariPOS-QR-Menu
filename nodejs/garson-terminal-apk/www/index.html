@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+    <title>Garson Terminal</title>
+    <style>
+        body{margin:0;background:#1e1e1e;color:#f0f0f0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+             display:flex;align-items:center;justify-content:center;min-height:100vh}
+        .box{text-align:center}
+        .box h1{font-size:20px;margin:0 0 10px}
+        .box p{color:#aaa;font-size:13px}
+        .spin{width:34px;height:34px;border:3px solid #444;border-top-color:#e67e22;border-radius:50%;
+              margin:0 auto 16px;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="spin"></div>
+        <h1>🍽️ Garson Terminal</h1>
+        <p id="msg">Bağlanıyor…</p>
+    </div>
+    <script src="cordova.js"></script>
+    <script>
+        /* Bu APK'nin TEK GOREVI: restoranin canli qrmenu sunucusundaki gercek
+           garson girisini (/garson?app=1) acmak. Statik dosya BURADA
+           TUTULMAZ - garson.html/garson-web tarafinda yapilacak HER duzeltme
+           bu APK'yi hic yeniden derlemeden aninda etkili olur, cunku sayfa
+           HER ZAMAN canli sunucudan yuklenir. */
+        var GARSON_URL = 'https://menu.ornek-alanadi.com/qrmenu-yerel-test-sp62yd/garson?app=1';
+        function goToGarson() { location.replace(GARSON_URL); }
+        document.addEventListener('deviceready', goToGarson, false);
+        // deviceready hic gelmezse (bazi WebView surumlerinde) yine de ac
+        setTimeout(goToGarson, 1500);
+    </script>
+</body>
+</html>

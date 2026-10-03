@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Öz Urfa Yusuf Usta - TV Menü</title>
+<link rel="icon" href="./logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  /* 27.09.2026 yeniden tasarim (kullanici istegi: "tv menü görselleri biraz
+     basit duruyor", sonra "biraz daha güzelleştir"). Iki sayfa tipi donusumlu:
+       - VITRIN: fotografli urunler - solda buyuk urun (yavas yakinlasan foto,
+         sirayla beliren yazilar, parlayan fiyat), sagda 4 kart.
+       - FIYAT PANOSU: fotografi OLMAYAN urunler kategori basliklariyla
+         "isim ...... fiyat" listesi + sagda "Bunu da deneyin" fotografli panel.
+     Alt bantta menuye giden GERCEK QR kodu. Arka planda hafif koz kivilcimlari.
+     Tum olculer vh/vw ile - her TV cozunurlugunde ayni oranda gorunur.
+     --brand satiri server.js tarafindan tema rengiyle degistirilir, dokunmayin. */
+  :root{--brand:#3498db;
+    --bg:#110d0b;--card:#211a16;--line:rgba(255,236,210,.12);
+    --text:#fbf6ef;--muted:#bfb3a4;--gold:#f2b544;--gold2:#ffd88a;--ember:#e0582b}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;color:var(--text);
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:radial-gradient(120vw 90vh at 0% 0%, #3d1e10 0%, transparent 55%),
+               radial-gradient(90vw 70vh at 100% 100%, #2c1b0c 0%, transparent 60%), var(--bg)}
+  /* cok hafif geometrik (cini benzeri) desen + kenar karartmasi */
+  body::before{content:"";position:fixed;top:0;right:0;bottom:0;left:0;opacity:.045;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23f2b544' stroke-width='1.2'%3E%3Cpath d='M32 4 L60 32 L32 60 L4 32 Z'/%3E%3Cpath d='M32 18 L46 32 L32 46 L18 32 Z'/%3E%3Ccircle cx='32' cy='32' r='3'/%3E%3C/g%3E%3C/svg%3E");background-size:9vh 9vh}
+  body::after{content:"";position:fixed;top:0;right:0;bottom:0;left:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+  .display{font-family:Oswald,"Arial Narrow",Impact,system-ui,sans-serif;letter-spacing:.02em}
+
+  /* koz kivilcimlari (JS 16 tane uretir; sadece transform/opacity - zayif TV cubuklarini yormaz) */
+  #embers{position:fixed;top:0;right:0;bottom:0;left:0;pointer-events:none;z-index:0;overflow:hidden}
+  #embers i{position:absolute;bottom:-2vh;border-radius:50%;background:#ffb36b;box-shadow:0 0 1.2vh .3vh rgba(255,120,40,.8);opacity:0;animation:rise linear infinite}
+  @keyframes rise{0%{transform:translate(0,0);opacity:0}10%{opacity:.85}70%{opacity:.5}100%{transform:translate(var(--dx,2vw),-105vh);opacity:0}}
+
+  #wrap{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:2.4vh 2.6vw 0}
+
+  /* ---------- Ust bant ---------- */
+  header{display:flex;align-items:center;gap:1.4vw;flex:none;height:9.5vh}
+  header img{height:8.4vh;width:auto;max-width:30vh;border-radius:1.6vh;background:#fff;object-fit:contain;padding:.6vh 1vh;border:.25vh solid rgba(242,181,68,.7);box-shadow:0 0 0 .6vh rgba(242,181,68,.12),0 .8vh 2.4vh rgba(0,0,0,.5)}
+  header .brand{display:flex;flex-direction:column;justify-content:center;min-width:0}
+  header .brand .name{font-size:4.4vh;font-weight:700;line-height:1;text-transform:uppercase;white-space:nowrap;
+    background:linear-gradient(180deg,#fff 30%,var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  header .brand .slogan{font-size:2vh;color:var(--gold2);margin-top:.8vh;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header .clock{margin-left:auto;text-align:right}
+  header .clock .time{font-size:6vh;font-weight:600;line-height:1;color:var(--gold);text-shadow:0 0 3vh rgba(242,181,68,.25)}
+  header .clock .date{font-size:1.8vh;color:var(--muted);text-transform:uppercase;letter-spacing:.2em;margin-top:.5vh}
+  .rule{position:relative;height:.3vh;margin:1.4vh 0 1.8vh;background:linear-gradient(90deg,var(--gold),rgba(242,181,68,.15) 60%,transparent);flex:none;border-radius:1vh}
+  .rule::after{content:"◆";position:absolute;left:0;top:50%;transform:translate(-30%,-54%);color:var(--gold);font-size:1.6vh}
+
+  /* ---------- Sahne ---------- */
+  #stage{flex:1;position:relative;min-height:0}
+  .page{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;gap:1.6vw}
+  .page.leaving{animation:pageOut .7s ease forwards}
+  @keyframes pageOut{to{opacity:0;transform:scale(.985);filter:blur(.4vh)}}
+  .ring::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:inherit;border:1px solid rgba(242,181,68,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);pointer-events:none}
+  @keyframes up{from{opacity:0;transform:translateY(2.4vh)}to{opacity:1;transform:none}}
+
+  /* Vitrin: buyuk urun */
+  .hero{position:relative;flex:0 0 57%;border-radius:2.4vh;overflow:hidden;background:var(--card);
+    box-shadow:0 2vh 5vh rgba(0,0,0,.6);animation:heroIn .9s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes heroIn{from{opacity:0;transform:translateX(-3vw) scale(.98)}to{opacity:1;transform:none}}
+  .hero img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;object-fit:cover;animation:kenburns var(--dur,14s) ease-out both}
+  @keyframes kenburns{from{transform:scale(1.02)}to{transform:scale(1.14)}}
+  /* Dusuk cozunurluklu foto: zorla buyutup bulaniklastirmak yerine ortada net durur,
+     arka plani ayni fotografin bulanik hali doldurur */
+  .hero img.blur{filter:blur(3vh) brightness(.55) saturate(1.2);transform:scale(1.15);animation:none}
+  .hero img.main.small{object-fit:contain;object-position:center 35%;animation:kenburnsSoft var(--dur,14s) ease-out both}
+  @keyframes kenburnsSoft{from{transform:scale(1)}to{transform:scale(1.05)}}
+  .hero .shade{position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(to top,rgba(10,7,5,.97) 0%,rgba(10,7,5,.78) 30%,rgba(10,7,5,0) 62%),linear-gradient(to right,rgba(10,7,5,.4),transparent 45%)}
+  .hero .body{position:absolute;left:0;right:0;bottom:0;padding:3.4vh 2.6vw}
+  .chip{display:inline-block;font-size:1.6vh;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#1a1208;background:linear-gradient(135deg,var(--gold2),var(--gold));padding:.7vh 1.3vh;border-radius:.8vh}
+  .hero .chip{position:absolute;top:2.6vh;left:2.6vw;box-shadow:0 .6vh 1.6vh rgba(0,0,0,.4);animation:up .6s .45s both}
+  .hero .star{position:absolute;top:2.6vh;right:2.6vw;font-size:1.8vh;font-weight:600;color:var(--gold2);background:rgba(10,7,5,.62);border:1px solid rgba(242,181,68,.55);padding:.8vh 1.5vh;border-radius:5vh;letter-spacing:.1em;text-transform:uppercase;backdrop-filter:blur(.6vh);animation:up .6s .55s both}
+  .hero .title{font-size:6.8vh;font-weight:700;line-height:1.02;text-transform:uppercase;text-shadow:0 .4vh 1.6vh rgba(0,0,0,.6);animation:up .7s .6s both}
+  .hero .desc{font-size:2.3vh;line-height:1.4;color:#eadfd0;margin-top:1.2vh;max-width:92%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;animation:up .7s .8s both}
+  .hero .foot{display:flex;align-items:flex-end;gap:1.2vw;margin-top:2vh;flex-wrap:wrap;animation:up .7s 1s both}
+  .price-tag{position:relative;overflow:hidden;display:inline-flex;align-items:baseline;gap:.6vh;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1208;border-radius:1.4vh;padding:.9vh 2.2vh;box-shadow:0 1vh 3vh rgba(242,181,68,.3)}
+  .price-tag::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);transform:skewX(-18deg);animation:shine 4.5s 1.8s ease-in-out infinite}
+  @keyframes shine{0%{left:-60%}35%,100%{left:130%}}
+  .price-tag .n{font-size:5.6vh;font-weight:700;line-height:1}
+  .price-tag .c{font-size:2.4vh;font-weight:600}
+  .old{font-size:2.4vh;color:#cfc4b6;text-decoration:line-through;margin-right:.6vw;align-self:center}
+  .portions{display:flex;gap:.8vw;flex-wrap:wrap;align-self:center}
+  .portions span{font-size:1.9vh;color:var(--text);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:1vh;padding:.7vh 1.2vh;backdrop-filter:blur(.6vh)}
+  .portions b{color:var(--gold2);font-weight:600;margin-left:.5vh}
+
+  /* Vitrin: sagdaki kartlar */
+  .side{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.6vw;min-width:0}
+  .card{position:relative;border-radius:2vh;overflow:hidden;background:var(--card);box-shadow:0 1.2vh 3vh rgba(0,0,0,.5);animation:cardIn .7s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes cardIn{from{opacity:0;transform:translateY(3vh) scale(.97)}to{opacity:1;transform:none}}
+  .card img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;object-fit:cover;animation:kenburnsSoft var(--dur,14s) ease-out both}
+  .card .shade{position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(to top,rgba(10,7,5,.96) 0%,rgba(10,7,5,.55) 40%,rgba(10,7,5,0) 66%)}
+  .card .body{position:absolute;left:0;right:0;bottom:0;padding:1.8vh 1.7vh}
+  .card .cat{font-size:1.3vh;letter-spacing:.22em;text-transform:uppercase;color:var(--gold2);opacity:.9}
+  .card .title{font-size:2.9vh;font-weight:600;line-height:1.08;text-transform:uppercase;margin-top:.4vh;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .price{display:inline-block;font-size:2.9vh;font-weight:700;color:var(--gold);margin-top:.8vh;background:rgba(10,7,5,.55);border:1px solid rgba(242,181,68,.35);border-radius:1vh;padding:.3vh 1.1vh}
+  .card .price small{font-size:1.6vh;font-weight:600;margin-left:.3vh}
+
+  /* Fiyat panosu */
+  .board{position:relative;flex:1;display:flex;flex-direction:column;border-radius:2.4vh;padding:3vh 2.6vw;min-width:0;
+    background:linear-gradient(180deg,rgba(255,236,210,.055),rgba(255,236,210,.02));box-shadow:inset 0 0 8vh rgba(0,0,0,.35);animation:cardIn .7s ease both}
+  .board .head{display:flex;align-items:baseline;gap:1.2vw;margin-bottom:2.2vh}
+  .board .head .t{font-size:4.4vh;font-weight:700;text-transform:uppercase;color:var(--gold)}
+  .board .head .s{font-size:1.8vh;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .board .cols{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3vw;min-height:0}
+  .board .col{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  .grp{font-size:2.3vh;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold2);border-bottom:.2vh solid rgba(242,181,68,.35);padding-bottom:.8vh;margin:1.4vh 0 1vh;display:flex;align-items:center;gap:.8vh}
+  .grp::before{content:"◆";font-size:1.4vh;color:var(--gold)}
+  .grp:first-child{margin-top:0}
+  .row{padding:.75vh 0;animation:rowIn .5s ease both}
+  @keyframes rowIn{from{opacity:0;transform:translateX(1.5vw)}to{opacity:1;transform:none}}
+  .row .line{display:flex;align-items:baseline;gap:1vw}
+  .row .nm{font-size:2.6vh;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .row .dots{flex:1;border-bottom:.25vh dotted rgba(255,236,210,.28);transform:translateY(-.6vh);min-width:2vw}
+  .row .pr{font-size:2.7vh;font-weight:600;color:var(--gold);white-space:nowrap}
+  .row .pr .old{font-size:1.8vh}
+  .row .ds{font-size:1.65vh;color:var(--muted);margin-top:.3vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Panonun yanindaki "Bunu da deneyin" fotografli panel */
+  .accent{position:relative;flex:0 0 25%;border-radius:2.4vh;overflow:hidden;background:var(--card);box-shadow:0 2vh 5vh rgba(0,0,0,.55);animation:heroIn .9s .2s cubic-bezier(.2,.8,.2,1) both}
+  .accent img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;object-fit:cover;animation:kenburns var(--dur,17s) ease-out both}
+  .accent .shade{position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(to top,rgba(10,7,5,.97) 0%,rgba(10,7,5,.6) 38%,rgba(10,7,5,.1) 70%)}
+  .accent .chip{position:absolute;top:2.4vh;left:1.8vw}
+  .accent .body{position:absolute;left:0;right:0;bottom:0;padding:3vh 1.8vw}
+  .accent .title{font-size:4vh;font-weight:700;line-height:1.05;text-transform:uppercase}
+  .accent .desc{font-size:1.8vh;color:#eadfd0;line-height:1.4;margin-top:1vh;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .accent .price-tag{margin-top:1.8vh}
+  .accent .price-tag .n{font-size:4.4vh}
+
+  /* ---------- Alt bant ---------- */
+  footer{flex:none;height:12vh;display:flex;align-items:center;gap:1.6vw;margin-top:1.8vh;padding:0 .2vw;border-top:1px solid var(--line);position:relative}
+  footer .qrbox{height:9.6vh;width:9.6vh;border-radius:1.2vh;background:#fff;padding:.7vh;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 .4vh rgba(242,181,68,.55),0 1vh 2.4vh rgba(0,0,0,.5);flex:none}
+  footer .qrbox img,footer .qrbox canvas{width:100%!important;height:100%!important;image-rendering:pixelated}
+  footer .qrbox.none{background:var(--gold);color:#1a1208;font-size:4.6vh;box-shadow:none}
+  footer .qrtext .a{font-size:2.8vh;font-weight:600;line-height:1.1}
+  footer .qrtext .a b{color:var(--gold)}
+  footer .qrtext .b{font-size:1.9vh;color:var(--muted);margin-top:.6vh}
+  footer .qrtext .u{font-size:1.7vh;color:var(--gold2);margin-top:.4vh;letter-spacing:.05em}
+  footer .tel{margin-left:auto;text-align:right}
+  footer .tel .l{color:var(--muted);font-size:1.6vh;letter-spacing:.24em;text-transform:uppercase}
+  footer .tel .n{font-size:4vh;font-weight:600;letter-spacing:.04em;color:var(--text);line-height:1.1}
+  footer .count{font-size:1.8vh;color:var(--muted);min-width:5vw;text-align:right;letter-spacing:.1em;align-self:flex-end;margin-bottom:2vh}
+  #progress{position:absolute;left:0;top:-1px;height:.35vh;width:0;background:linear-gradient(90deg,var(--ember),var(--gold));border-radius:1vh;box-shadow:0 0 1.2vh rgba(242,181,68,.6)}
+  #progress.run{animation:prog var(--dur,14s) linear forwards}
+  @keyframes prog{from{width:0}to{width:100%}}
+
+  /* ---------- TV ekstralari (29.09.2026) ---------- */
+  /* Geri sayimli kampanya sayfasi */
+  .camp{position:relative;flex:1;border-radius:2.4vh;overflow:hidden;background:var(--card);box-shadow:0 2vh 5vh rgba(0,0,0,.6);animation:heroIn .9s cubic-bezier(.2,.8,.2,1) both}
+  .camp img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;object-fit:cover;animation:kenburns var(--dur,16s) ease-out both}
+  .camp .shade{position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(90deg,rgba(10,7,5,.96) 0%,rgba(10,7,5,.82) 42%,rgba(10,7,5,.1) 75%)}
+  .camp .body{position:absolute;left:0;top:0;bottom:0;width:58%;display:flex;flex-direction:column;justify-content:center;padding:4vh 3.4vw}
+  .camp .chip{align-self:flex-start;background:linear-gradient(135deg,#ff8a5c,var(--ember));color:#fff;animation:up .6s .3s both}
+  .camp .title{font-size:8vh;font-weight:700;line-height:1;text-transform:uppercase;margin-top:2vh;animation:up .7s .45s both}
+  .camp .text{font-size:2.8vh;line-height:1.4;color:#eadfd0;margin-top:1.6vh;animation:up .7s .6s both}
+  .camp .price-tag{align-self:flex-start;margin-top:2.6vh;animation:up .7s .75s both}
+  .camp .cd{margin-top:3.4vh;animation:up .7s .9s both}
+  .camp .cd .l{font-size:2vh;letter-spacing:.24em;text-transform:uppercase;color:var(--gold2)}
+  .camp .cd .v{display:flex;gap:1.2vw;margin-top:1vh}
+  .camp .cd .v div{min-width:10vh;text-align:center;background:rgba(10,7,5,.6);border:1px solid rgba(242,181,68,.45);border-radius:1.6vh;padding:1vh 1.2vh}
+  .camp .cd .v b{display:block;font-size:6.4vh;line-height:1;color:var(--gold)}
+  .camp .cd .v span{font-size:1.5vh;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
+  /* Google yorum bandi */
+  #ticker{flex:none;height:5.2vh;margin-top:1.4vh;display:flex;align-items:center;gap:1.2vw;border-radius:1.4vh;background:rgba(255,236,210,.05);border:1px solid var(--line);overflow:hidden}
+  #ticker[hidden]{display:none}
+  #ticker .g{flex:none;display:flex;align-items:center;gap:.8vh;height:100%;padding:0 1.6vh;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1208;font-weight:700;font-size:2.2vh;white-space:nowrap}
+  #ticker .track{flex:1;overflow:hidden;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+  #ticker .run{display:inline-block;padding-left:100%;animation:tick var(--tdur,60s) linear infinite;font-size:2.2vh}
+  #ticker .run span{margin-right:5vw}
+  #ticker .run i{font-style:normal;color:var(--gold)}
+  #ticker .run em{font-style:normal;color:var(--muted)}
+  @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+  /* Gece modu ve kapali ekran */
+  body.night #wrap{filter:brightness(.5) saturate(.85)}
+  body.night #embers{display:none}
+  #offScreen{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;background:#000;color:#8a8076;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center}
+  #offScreen.show{display:flex}
+  #offScreen .t{font-size:12vh;font-weight:600;color:#5c544c}
+  #offScreen .m{font-size:3vh;letter-spacing:.1em}
+  #empty{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;font-size:3vh;color:var(--muted)}
+  /* 29.09.2026: eskiden TUM ekrani %55 karartan bir perdeydi - TV'de kumandayla
+     "dokunulamadigi" icin ekran surekli karanlik kaliyordu. Artik kosede kucuk
+     bir etiket; kumandada herhangi bir tus (OK/Enter) da muzigi acar. */
+  /* alt bandin ortasi (QR yazisi ile telefon arasi) - uzun restoran adlarinin ustune binmez */
+  #musicTap{position:fixed;left:50%;bottom:4.2vh;-webkit-transform:translateX(-50%);transform:translateX(-50%);display:none;cursor:pointer;z-index:50}
+  #musicTap.show{display:block}
+  #musicTap div{background:rgba(10,7,5,.72);color:var(--gold2);border:1px solid rgba(242,181,68,.45);border-radius:5vh;padding:.9vh 1.8vh;font-size:1.8vh;font-weight:600;letter-spacing:.04em}
+  #ytPlayer{position:fixed;left:-9999px;top:-9999px;width:1px;height:1px}
+</style>
+</head>
+<body>
+<div id="embers"></div>
+<div id="wrap">
+  <header>
+    <img src="./logo.png" alt="Logo" onerror="this.remove()">
+    <div class="brand">
+      <div class="name display">Öz Urfa Yusuf Usta</div>
+      <div class="slogan">Bursa'nın Lezzet Durağı</div>
+    </div>
+    <div class="clock"><div class="time display" id="clockTime">--:--</div><div class="date" id="clockDate">&nbsp;</div></div>
+  </header>
+  <div class="rule"></div>
+  <div id="stage"><div id="empty">Menü hazırlanıyor…</div></div>
+  <div id="ticker" hidden><div class="g" id="tickerHead">★ Google</div><div class="track"><div class="run" id="tickerRun"></div></div></div>
+  <footer>
+    <div id="progress"></div>
+    <div class="qrbox none" id="qrbox">▦</div>
+    <div class="qrtext">
+      <div class="a display">Menüyü <b>telefonunuza</b> alın</div>
+      <div class="b">QR kodu okutun, siparişinizi telefonunuzdan verin</div>
+      <div class="u" id="qrUrl"></div>
+    </div>
+    <div class="tel"><a id="telLink" href="tel:+902243660605" style="display:none"></a><div class="l">Paket Servis</div><div class="n display" id="telText"></div></div>
+    <div class="count" id="count"></div>
+  </footer>
+</div>
+<div id="offScreen"><div class="t display" id="offClock">--:--</div><div class="m" id="offMsg">Şu an kapalıyız</div></div>
+<div id="ytPlayer"></div>
+<script>
+/* Hata gostergesi (29.09.2026) - BILEREK en eski yazimla (ES5) yazildi ki ana
+   betik bu tarayicida calismasa bile bu calissin. Menu hic gelmezse ekranda
+   sebep ve tarayici surumu yazar (destek icin fotografi yeterli). */
+var tvShown = false;
+function tvError(msg) {
+  if (tvShown) return;
+  var el = document.getElementById('empty');
+  if (!el) return;
+  var ua = (navigator.userAgent.match(/(Chrome|Chromium|Firefox|Version)\/[\d.]+/) || [navigator.userAgent.slice(0, 60)])[0];
+  el.innerHTML = '<div style="text-align:center;line-height:1.6">Menü yüklenemedi<br><span style="font-size:2vh;opacity:.7">' +
+    String(msg).replace(/[<>&]/g, '') + '<br>Tarayıcı: ' + ua.replace(/[<>&]/g, '') + '</span></div>';
+}
+window.onerror = function (m) { tvError(m); };
+if (!window.fetch || !window.Promise) tvError('Bu TV tarayıcısı çok eski (fetch desteklemiyor)');
+setTimeout(function () { if (!tvShown && document.getElementById('empty')) tvError('Menü 25 saniyede gelmedi (internet bağlantısını kontrol edin)'); }, 25000);
+</script>
+<div id="ezanBadge" style="display:none;position:fixed;left:50%;bottom:4.2vh;-webkit-transform:translateX(-50%);transform:translateX(-50%);z-index:55;background:rgba(10,7,5,.78);color:#ffd88a;border:1px solid rgba(242,181,68,.45);border-radius:5vh;padding:.9vh 1.8vh;font-size:1.8vh;font-weight:600">🕌 Ezan vakti — müzik kısa süreliğine durduruldu</div>
+<div id="musicTap"><div>🔊 Müzik için dokunun / kumandada OK</div></div>
+<script>
+/* TV Menu (kullanici istegi, 26.09.2026: "tv olsun, tvde menuler donsun,
+   açıklama ve görsellerle olabilir fiyatları da yazsın") - restoranda duran
+   bir TV/ekrana (Chromecast, Fire TV Stick, mini PC + Chrome tam ekran vb.)
+   bu sayfa acilir (http://<bu-bilgisayarin-IP-si>:4500/tv veya
+   menu.ornek-alanadi.com/<slug>/tv), tamamen pasif - etkilesim GEREKMEZ.
+   Ayni /api/menu'yu (musteri menusuyle AYNI kaynak) kullandigi icin panelden
+   yapilan HER degisiklik (fiyat, foto, aciklama) otomatik yansir. */
+/* 26.09.2026 duzeltmesi: hostname'e degil BILINEN SAYFA ADINA ("/tv") bakip
+   pathname'den cikarir - menu.ornek-alanadi.com/<slug>/tv, app.ornek-alanadi.com/qrmenu/tv
+   ve LAN'da dogru calisir. */
+const API_BASE = location.pathname.replace(/\/tv(\.html)?\/?$/, '').replace(/\/+$/, '');
+const HERO_SIDE = 4;          /* vitrin sayfasinda buyuk urunun yanindaki kart sayisi */
+const VITRIN_MS = 13000;      /* vitrin sayfasi ekranda kalma suresi */
+const BOARD_MS = 17000;       /* fiyat panosu ekranda kalma suresi (okumak daha uzun surer) */
+const COL_CAPACITY = 11;      /* panoda bir sutuna sigan satir birimi (baslik 1.4, aciklamali urun 1.45) */
+let pages = [];
+let photoPool = [];
+let pageIndex = -1;
+let pageTimer = null;
+
+/* 29.09.2026: akilli TV tarayicilari (Samsung/LG/eski Android TV = Chrome 49-60)
+   icin bu betikte ES2016+ yazim YOK: ??, ?., async/await, catch{}, flatMap,
+   padStart, NodeList.forEach kullanmayin - tek bir tanimsiz yazim tum betigi
+   durdurup ekrani "Menu hazirlaniyor"da birakiyordu (kullanici: evdeki TV). */
+function escapeHtml(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+function amount(n) { n = Number(n) || 0; return n.toLocaleString('tr-TR', Number.isInteger(n) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function titleCase(s) { return String(s || '').toLocaleLowerCase('tr-TR').replace(/(^|\s)(\S)/g, (m, sp, ch) => sp + ch.toLocaleUpperCase('tr-TR')); }
+function catLabel(c) { return titleCase(String(c || '').replace(/\s*ÇEŞİTLERİ\s*$/i, '')); }
+/* Veride bazen isimde kacis metni olarak "\r" kaliyor (ornek "SPENCİAL\r PİDE") - ekranda temizlenir */
+function cleanName(s) { return String(s || '').replace(/\\[rnt]|[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim(); }
+/* Fiyati 0 olan urunler (fiyati porsiyonda tanimli menuler vb.): en dusuk porsiyon fiyati, o da yoksa fiyat yazilmaz */
+function shownPrice(item) {
+  const p = Number(item.price) || 0;
+  if (p > 0) return p;
+  const ps = (item.portions || []).map(x => Number(x.price) || 0).filter(x => x > 0);
+  return ps.length ? Math.min.apply(null, ps) : 0;
+}
+function oldPriceHtml(item) { return item.oldPrice ? `<span class="old">${escapeHtml(item.oldPrice)}</span>` : ''; }
+/* "Normal" disindaki porsiyonlar (1,5 Porsiyon vb.) fiyatin yaninda gosterilir */
+function extraPortions(item) {
+  return (item.portions || []).filter(p => p && p.name && Number(p.price) > 0 && Number(p.price) !== shownPrice(item) && !/^normal$/i.test(p.name));
+}
+function badgeText(item) {
+  const b = (item.badges || [])[0];
+  return b ? (typeof b === 'string' ? b : (b.label || b.name || b.text || '')) : '';
+}
+function priceTag(item) {
+  const p = shownPrice(item);
+  return p ? `${oldPriceHtml(item)}<div class="price-tag display"><span class="n">${amount(p)}</span><span class="c">TL</span></div>` : '';
+}
+/* Buyuk fotograflar icin: net foto + arkasinda ayni fotonun bulanik hali;
+   foto kucukse (dusuk cozunurluk) ekrani zorla doldurmaz, ortada net durur */
+function bigPhoto(item) {
+  const src = escapeHtml(item.imageUrl);
+  return `<img class="blur" src="${src}" alt="" onerror="this.remove()">
+          <img class="main" src="${src}" alt="" onload="if (this.naturalWidth < 900) this.classList.add('small')" onerror="this.remove()">`;
+}
+
+/* ---------------- Sayfa uretimi ---------------- */
+function buildPages(categories) {
+  const withPhoto = [], noPhoto = [];
+  for (const c of categories) {
+    for (const item of (c.items || [])) {
+      const it = Object.assign({ cat: c.name }, item, { name: cleanName(item.name) });
+      (item.imageUrl ? withPhoto : noPhoto).push(it);
+    }
+  }
+  photoPool = withPhoto;
+
+  /* Vitrin sayfalari: 1 buyuk + HERO_SIDE kart; urunler her yuklemede karisir */
+  const vitrins = [];
+  const mixed = shuffle(withPhoto);
+  for (let i = 0; i < mixed.length; i += HERO_SIDE + 1) {
+    const chunk = mixed.slice(i, i + HERO_SIDE + 1);
+    if (chunk.length) vitrins.push({ type: 'vitrin', hero: chunk[0], side: chunk.slice(1) });
+  }
+  /* Son sayfa eksik kaldiysa bastan urun ekleyip doldur (ekran hep dolu gorunsun) */
+  const last = vitrins[vitrins.length - 1];
+  if (last && vitrins.length > 1) for (let k = 0; last.side.length < HERO_SIDE; k++) last.side.push(mixed[k]);
+
+  /* Fiyat panolari: fotografsiz urunler kategori sirasiyla, 2 sutuna yerlestirilir */
+  const blocks = [];
+  let lastCat = null;
+  for (const it of noPhoto) {
+    if (it.cat !== lastCat) { blocks.push({ kind: 'grp', cat: it.cat, u: 1.4 }); lastCat = it.cat; }
+    blocks.push({ kind: 'row', item: it, u: it.description ? 1.45 : 1 });
+  }
+  const boards = [];
+  let cur = null, col = null, curCat = null;
+  const newCol = () => {
+    if (!cur || cur.cols.length === 2) { cur = { type: 'board', cols: [] }; boards.push(cur); }
+    col = { blocks: [], used: 0 }; cur.cols.push(col);
+  };
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (b.kind === 'grp') curCat = b.cat;
+    const need = b.kind === 'grp' ? b.u + (blocks[i + 1] ? blocks[i + 1].u : 0) : b.u; /* baslik, altindaki urunle birlikte sigmali */
+    if (!col || col.used + need > COL_CAPACITY) {
+      newCol();
+      if (b.kind === 'row') { col.blocks.push({ kind: 'grp', cat: curCat, cont: true }); col.used += 1.4; }
+    }
+    col.blocks.push(b); col.used += b.u;
+  }
+  const accents = shuffle(withPhoto);
+  boards.forEach((bd, i) => {
+    const cats = [];
+    bd.cols.forEach(c => c.blocks.forEach(b => { if (b.kind === 'grp' && cats.indexOf(b.cat) === -1) cats.push(b.cat); }));
+    bd.title = cats.length === 1 ? catLabel(cats[0]) : 'Fiyat Listesi';
+    bd.sub = cats.length === 1 ? 'Fiyat listesi' : cats.map(catLabel).join(' · ');
+    bd.accent = accents.length ? accents[i % accents.length] : null;
+  });
+
+  /* Siralama: 2 vitrin, 1 pano, 2 vitrin, 1 pano ... */
+  const out = [];
+  let v = 0, b = 0;
+  while (v < vitrins.length || b < boards.length) {
+    for (let k = 0; k < 2 && v < vitrins.length; k++) out.push(vitrins[v++]);
+    if (b < boards.length) out.push(boards[b++]);
+  }
+  return out;
+}
+
+/* ---------------- Cizim ---------------- */
+function vitrinHtml(p) {
+  const h = p.hero;
+  const portions = extraPortions(h);
+  const badge = badgeText(h) || 'Ustanın Önerisi';
+  return `
+    <div class="hero ring" style="--dur:${VITRIN_MS + 1500}ms">
+      ${bigPhoto(h)}
+      <div class="shade"></div>
+      <span class="chip">${escapeHtml(catLabel(h.cat))}</span>
+      <span class="star">★ ${escapeHtml(badge)}</span>
+      <div class="body">
+        <div class="title display">${escapeHtml(h.name)}</div>
+        ${h.description ? `<div class="desc">${escapeHtml(h.description)}</div>` : ''}
+        <div class="foot">
+          ${priceTag(h)}
+          ${portions.length ? `<div class="portions">${portions.map(x => `<span>${escapeHtml(x.name)}<b>${amount(x.price)} TL</b></span>`).join('')}</div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      ${p.side.map((it, i) => `
+        <div class="card ring" style="animation-delay:${250 + i * 140}ms;--dur:${VITRIN_MS + 1500}ms">
+          <img src="${escapeHtml(it.imageUrl)}" alt="" onerror="this.remove()">
+          <div class="shade"></div>
+          <div class="body">
+            <div class="cat">${escapeHtml(catLabel(it.cat))}</div>
+            <div class="title display">${escapeHtml(it.name)}</div>
+            ${shownPrice(it) ? `<div class="price display">${oldPriceHtml(it)}${amount(shownPrice(it))}<small>TL</small></div>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function boardHtml(p) {
+  let n = 0;
+  const colHtml = c => `<div class="col">${c.blocks.map(b => b.kind === 'grp'
+    ? `<div class="grp display">${escapeHtml(catLabel(b.cat))}${b.cont ? ' <span style="opacity:.55">(devam)</span>' : ''}</div>`
+    : `<div class="row" style="animation-delay:${150 + (n++) * 45}ms">
+         <div class="line"><span class="nm">${escapeHtml(b.item.name)}</span><span class="dots"></span>
+           <span class="pr display">${shownPrice(b.item) ? `${oldPriceHtml(b.item)}${amount(shownPrice(b.item))} TL` : ''}</span></div>
+         ${b.item.description ? `<div class="ds">${escapeHtml(b.item.description)}</div>` : ''}
+       </div>`).join('')}</div>`;
+  const a = p.accent;
+  return `
+    <div class="board ring">
+      <div class="head"><div class="t display">${escapeHtml(p.title)}</div><div class="s">${escapeHtml(p.sub)}</div></div>
+      <div class="cols">${p.cols.map(colHtml).join('')}${p.cols.length < 2 ? '<div class="col"></div>' : ''}</div>
+    </div>
+    ${a ? `<div class="accent ring" style="--dur:${BOARD_MS + 1500}ms">
+      ${bigPhoto(a)}
+      <div class="shade"></div>
+      <span class="chip">Bunu da deneyin</span>
+      <div class="body">
+        <div class="title display">${escapeHtml(a.name)}</div>
+        ${a.description ? `<div class="desc">${escapeHtml(a.description)}</div>` : ''}
+        ${priceTag(a)}
+      </div>
+    </div>` : ''}`;
+}
+
+function showPage(i) {
+  const stage = document.getElementById('stage');
+  if (!pages.length) { stage.innerHTML = '<div id="empty">Menü hazırlanıyor…</div>'; document.getElementById('count').textContent = ''; return; }
+  if (wasOff) return; /* kapali saatlerde donmez */
+  pageIndex = ((i % pages.length) + pages.length) % pages.length;
+  /* Kampanya saati disindaysa kampanya sayfalari atlanir */
+  for (let k = 0; k < pages.length && pages[pageIndex].type === 'campaign' && !campaignActive(); k++) pageIndex = (pageIndex + 1) % pages.length;
+  const p = pages[pageIndex];
+  if (p.type === 'campaign' && !campaignActive()) { stage.innerHTML = '<div id="empty">Menü hazırlanıyor…</div>'; clearTimeout(pageTimer); pageTimer = setTimeout(() => showPage(0), 20000); return; }
+  const ms = p.type === 'board' ? BOARD_MS : p.type === 'campaign' ? CAMPAIGN_MS : VITRIN_MS;
+
+  const old = stage.querySelectorAll('.page, #empty');
+  Array.prototype.forEach.call(old, el => { el.classList.add('leaving'); setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 700); });
+  const el = document.createElement('div');
+  el.className = 'page';
+  el.innerHTML = p.type === 'board' ? boardHtml(p) : p.type === 'campaign' ? campaignHtml() : vitrinHtml(p);
+  tvShown = true; /* hata gostergesi artik devreye girmez */
+  setTimeout(() => { stage.appendChild(el); tickCountdown(); }, old.length ? 350 : 0);
+
+  const bar = document.getElementById('progress');
+  bar.classList.remove('run'); void bar.offsetWidth;
+  bar.style.setProperty('--dur', ms + 'ms'); bar.classList.add('run');
+  document.getElementById('count').textContent = `${pageIndex + 1} / ${pages.length}`;
+
+  clearTimeout(pageTimer);
+  pageTimer = setTimeout(() => showPage(pageIndex + 1), ms);
+}
+
+let menuCats = [];
+function loadMenu() {
+  return fetch(API_BASE + '/api/menu').then(r => r.json()).then(data => {
+    const first = !pages.length;
+    menuCats = data.categories || [];
+    rebuildPages();
+    if (first) showPage((parseInt((location.hash.match(/sayfa=(\d+)/) || [])[1], 10) || 1) - 1); /* /tv#sayfa=3 ile istenen sayfadan baslar */
+    else if (pageIndex >= pages.length) pageIndex = -1; /* yeni sayfa listesi; sayac bir sonraki geciste devam eder */
+  }).catch(e => { tvError('Menü alınamadı: ' + (e && e.message || e)); /* bir sonraki yenilemede tekrar dener */ });
+}
+
+/* ================= TV ekstralari (29.09.2026) =================
+   Panelden: uzaktan yenile, tek kategori goster, gece modu, otomatik kapanma,
+   geri sayimli kampanya, Google yorum bandi. /api/tv-extras 20 sn'de bir okunur. */
+const CAMPAIGN_MS = 12000;
+const CAMPAIGN_EVERY = 3;       /* her 3 menu sayfasinda bir kampanya sayfasi */
+let extras = null, firstRefreshAt = null, wasOff = false;
+
+function rebuildPages() {
+  const pin = extras && extras.pinCategory;
+  const pinned = pin ? menuCats.filter(c => c.name === pin) : [];
+  const menuPages = buildPages(pinned.length ? pinned : menuCats);
+  const cp = extras && extras.campaign;
+  if (!cp || !cp.enabled || !cp.title) { pages = menuPages; return; }
+  const out = [];
+  menuPages.forEach((p, i) => { if (i % CAMPAIGN_EVERY === 0) out.push({ type: 'campaign' }); out.push(p); });
+  if (!out.length) out.push({ type: 'campaign' });
+  pages = out;
+}
+function hm(s) { const [h, m] = String(s).split(':').map(Number); return h * 60 + m; }
+function nowMin() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+function inWindow(from, to) { const n = nowMin(), a = hm(from), b = hm(to); return a <= b ? (n >= a && n < b) : (n >= a || n < b); }
+function campaignActive() { const cp = extras && extras.campaign; return !!(cp && cp.enabled && cp.title && inWindow(cp.from, cp.until)); }
+function campaignEnd() {
+  const d = new Date(), [h, m] = extras.campaign.until.split(':').map(Number);
+  const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, 0);
+  if (end <= d) end.setDate(end.getDate() + 1);
+  return end;
+}
+function campaignHtml() {
+  const cp = extras.campaign;
+  const want = cp.itemName && photoPool.find(it => it.name.toLocaleLowerCase('tr-TR') === cleanName(cp.itemName).toLocaleLowerCase('tr-TR'));
+  const photo = want || (photoPool.length ? photoPool[Math.floor(Math.random() * photoPool.length)] : null);
+  const priceNum = Number(String(cp.price).replace(',', '.'));
+  return `
+    <div class="camp ring" style="--dur:${CAMPAIGN_MS + 2000}ms">
+      ${photo ? `<img src="${escapeHtml(photo.imageUrl)}" alt="" onerror="this.remove()">` : ''}
+      <div class="shade"></div>
+      <div class="body">
+        <span class="chip">🔥 Kampanya</span>
+        <div class="title display">${escapeHtml(cp.title)}</div>
+        ${cp.text ? `<div class="text">${escapeHtml(cp.text)}</div>` : ''}
+        ${cp.price ? `<div class="price-tag display"><span class="n">${escapeHtml(priceNum ? amount(priceNum) : cp.price)}</span>${priceNum ? '<span class="c">TL</span>' : ''}</div>` : ''}
+        <div class="cd"><div class="l">Kampanyanın bitmesine</div>
+          <div class="v"><div><b data-cd="h">00</b><span>Saat</span></div><div><b data-cd="m">00</b><span>Dakika</span></div><div><b data-cd="s">00</b><span>Saniye</span></div></div></div>
+      </div>
+    </div>`;
+}
+function tickCountdown() {
+  const els = document.querySelectorAll('[data-cd]');
+  if (!els.length || !extras) return;
+  let s = Math.max(0, Math.floor((campaignEnd() - new Date()) / 1000));
+  const v = { h: Math.floor(s / 3600), m: Math.floor(s % 3600 / 60), s: s % 60 };
+  Array.prototype.forEach.call(els, el => { el.textContent = ('0' + v[el.dataset.cd]).slice(-2); });
+}
+setInterval(tickCountdown, 1000);
+
+function renderTicker() {
+  const box = document.getElementById('ticker');
+  const rv = extras && extras.reviews;
+  const nt = extras && extras.notes;
+  const hasRv = !!(rv && rv.enabled && rv.items && rv.items.length);
+  const notes = (nt && nt.enabled && nt.current) ? nt.current : [];
+  if (!hasRv && !notes.length) { box.hidden = true; return; }
+  const stars = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+  /* 30.09.2026: havuz (Google + musteri + elle) - her yorumun KENDI yildizi; Google kaynagi belirtilir */
+  const rtxt = hasRv && rv.rating ? String(Math.round(rv.rating * 10) / 10).replace('.', ',') : '';
+  document.getElementById('tickerHead').textContent = hasRv
+    ? (rtxt ? `★ ${rtxt}${rv.count ? ` · ${rv.count}${rv.source === 'google' ? ' Google yorumu' : ' yorum'}` : ''}` : '★ Yorumlar')
+    : '👨‍🍳 Şefin Notu';
+  const rvHtml = hasRv ? rv.items.map(r => `<span><i>${stars(r.rating || rv.rating || 5)}</i> “${escapeHtml(r.text)}”${r.name ? ` <em>— ${escapeHtml(r.name)}${r.source === 'google' ? ' · Google' : ''}</em>` : ''}</span>`) : [];
+  /* Sefin notu: TANITIM yazisi - yildiz/musteri adi YOK, "Sefin notu" diye acikca belirtilir */
+  const ntHtml = notes.map(t => `<span><i>👨‍🍳</i> <b style="color:var(--gold2)">Şefin notu:</b> ${escapeHtml(t)}</span>`);
+  /* ikisi de aciksa arali: 2 yorum, 1 not ... */
+  const parts = [];
+  let a = 0, b = 0;
+  while (a < rvHtml.length || b < ntHtml.length) {
+    for (let k = 0; k < 2 && a < rvHtml.length; k++) parts.push(rvHtml[a++]);
+    if (b < ntHtml.length) parts.push(ntHtml[b++]);
+  }
+  const html = parts.join('');
+  const run = document.getElementById('tickerRun');
+  if (run.dataset.html !== html) {
+    run.dataset.html = html; run.innerHTML = html;
+    run.style.setProperty('--tdur', Math.max(30, Math.round(run.textContent.length / 6)) + 's');
+  }
+  box.hidden = false;
+}
+
+/* Ezan vaktinde muzik durur (30.09.2026): vakitten 1 dk once baslar, secilen sure kadar surer,
+   bitince muzik kaldigi yerden devam eder. Vakitler sunucudan (Diyanet hesabi, secilen il). */
+let ezanMuted = false;
+function checkEzan() {
+  const ez = extras && extras.ezan;
+  let active = false;
+  if (ez && ez.enabled && ez.times && ez.times.length) {
+    const n = nowMin();
+    active = ez.times.some(t => { const m = hm(t); return n >= m - 1 && n < m + (ez.minutes || 5); });
+  }
+  const badge = document.getElementById('ezanBadge');
+  if (active && !ezanMuted) {
+    ezanMuted = true;
+    try { if (ytPlayer) ytPlayer.pauseVideo(); } catch (e) {}
+    if (badge) badge.style.display = 'block';
+    musicTap.style.visibility = 'hidden';
+  } else if (!active && ezanMuted) {
+    ezanMuted = false;
+    try { if (ytPlayer && !wasOff) ytPlayer.playVideo(); } catch (e) {}
+    if (badge) badge.style.display = 'none';
+    musicTap.style.visibility = '';
+  }
+}
+setInterval(checkEzan, 10000);
+
+function applyOff() {
+  const off = !!(extras && extras.offEnabled && inWindow(extras.offFrom, extras.offTo));
+  const scr = document.getElementById('offScreen');
+  if (off) {
+    document.getElementById('offClock').textContent = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('offMsg').textContent = `Şu an kapalıyız · Açılış ${extras.offTo}`;
+  }
+  /* kapali saatlerde fon muzigi de durur, acilista devam eder */
+  if (off && !wasOff) { scr.classList.add('show'); clearTimeout(pageTimer); try { if (ytPlayer) ytPlayer.pauseVideo(); } catch (e) {} }
+  if (!off && wasOff) { scr.classList.remove('show'); try { if (ytPlayer && !ezanMuted) ytPlayer.playVideo(); } catch (e) {} wasOff = false; showPage(pageIndex + 1); }
+  wasOff = off;
+}
+
+function loadExtras() {
+  return fetch(API_BASE + '/api/tv-extras', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(x => {
+    if (firstRefreshAt === null) firstRefreshAt = x.refreshAt;
+    else if (x.refreshAt !== firstRefreshAt) { location.reload(); return; } /* panelden "TV'leri yenile" */
+    const before = JSON.stringify(extras && { p: extras.pinCategory, c: extras.campaign });
+    extras = x;
+    document.body.classList.toggle('night', x.night);
+    renderTicker();
+    if (before !== JSON.stringify({ p: x.pinCategory, c: x.campaign }) && menuCats.length) {
+      rebuildPages();
+      pageIndex = -1; if (!wasOff) showPage(0);
+    }
+    applyOff();
+    checkEzan();
+  }).catch(() => { /* eski sunucu ya da gecici hata - TV normal dongusune devam eder */ });
+}
+loadExtras();
+setInterval(loadExtras, 20000);
+setInterval(applyOff, 30000);
+
+/* Telefon: server.js "tel:" linkini ayarlardaki numarayla degistirir; buradan okunup
+   "0224 366 06 05" bicimine cevrilir. */
+(function showPhone() {
+  let d = (document.getElementById('telLink').getAttribute('href') || '').replace(/\D/g, '');
+  if (d.startsWith('90') && d.length === 12) d = '0' + d.slice(2);
+  const t = d.length === 11 ? `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7, 9)} ${d.slice(9)}` : d;
+  if (t) document.getElementById('telText').textContent = t; else document.querySelector('footer .tel').remove();
+})();
+
+/* Alt banttaki QR: musterinin telefonla okutup menuye gidecegi GERCEK adres.
+   menu.ornek-alanadi.com uzerinden aciksa adres zaten sayfanin kendisi; LAN'da
+   /api/menu-link (tunelden ogrenilen menu.ornek-alanadi.com/<slug>) sorulur.
+   Adres bilinmiyorsa (tunel kapali) QR yerine simge kalir - yanlis QR basilmaz. */
+function showQr() {
+  const get = location.hostname === 'menu.ornek-alanadi.com'
+    ? Promise.resolve(location.origin + API_BASE)
+    : fetch(API_BASE + '/api/menu-link').then(r => r.json()).then(j => j.menuBaseUrl);
+  return get.then(url => {
+    if (!url || !window.QRCode) return;
+    if (!url.endsWith('/')) url += '/'; /* sonu "/" olmazsa menudeki goreli linkler slug'i kaybediyor */
+    const box = document.getElementById('qrbox');
+    box.textContent = ''; box.classList.remove('none');
+    const px = Math.max(96, Math.round(window.innerHeight * 0.085));
+    new QRCode(box, { text: url, width: px, height: px, colorDark: '#1a1208', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    document.getElementById('qrUrl').textContent = url.replace(/^https?:\/\//, '');
+  }).catch(() => { /* QR opsiyonel - hata olursa simge kalir */ });
+}
+
+/* Koz kivilcimlari */
+(function embers() {
+  const box = document.getElementById('embers');
+  for (let i = 0; i < 16; i++) {
+    const e = document.createElement('i');
+    const s = (0.25 + Math.random() * 0.45).toFixed(2);
+    e.style.cssText = `left:${(Math.random() * 100).toFixed(1)}vw;width:${s}vh;height:${s}vh;` +
+      `animation-duration:${(11 + Math.random() * 12).toFixed(1)}s;animation-delay:-${(Math.random() * 20).toFixed(1)}s;--dx:${(Math.random() * 8 - 4).toFixed(1)}vw`;
+    box.appendChild(e);
+  }
+})();
+
+function tickClock() {
+  const now = new Date();
+  document.getElementById('clockTime').textContent = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('clockDate').textContent = now.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+tickClock();
+setInterval(tickClock, 15000);
+
+loadMenu();
+showQr();
+setInterval(loadMenu, 5 * 60000); /* panelden yapilan degisiklikleri yakalamak icin 5 dakikada bir tazele */
+
+/* Fon muzigi (kullanici istegi, 26.09.2026) - admin panelde girilen YouTube
+   videosu, YouTube IFrame API ile loop'lanarak calinir. Player gorunmez
+   (1x1px, ekran disi) - sadece SES. Tarayicilarin otomatik SESLI oynatma
+   politikasi yuzunden SESSIZ baslar, ilk dokunusta ses acilir. */
+const musicTap = document.getElementById('musicTap');
+let ytPlayer = null, musicVolume = 50;
+
+function loadYoutubeApi() {
+  return new Promise(resolve => {
+    if (window.YT && window.YT.Player) return resolve();
+    window.onYouTubeIframeAPIReady = resolve;
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  });
+}
+function initMusic() {
+  let flags = null;
+  return fetch(API_BASE + '/api/site-flags').then(r => r.json()).then(f => {
+    flags = f;
+    if (!flags.tvMusicEnabled || !flags.tvMusicYoutubeId) return false;
+    musicVolume = Math.max(0, Math.min(100, Number(flags.tvMusicVolume) || 50));
+    return loadYoutubeApi().then(() => true);
+  }).then(go => {
+    if (!go) return;
+    ytPlayer = new YT.Player('ytPlayer', {
+      videoId: flags.tvMusicYoutubeId,
+      playerVars: { autoplay: 1, mute: 1, loop: 1, playlist: flags.tvMusicYoutubeId, controls: 0, disablekb: 1, modestbranding: 1, rel: 0 },
+      events: {
+        onReady: e => { if (!wasOff && !ezanMuted) e.target.playVideo(); musicTap.classList.add('show'); }
+      }
+    });
+  }).catch(() => { /* YouTube engelliyse/erisilemiyorsa sessizce vazgec */ });
+}
+function startMusicSound() {
+  if (ytPlayer) { try { ytPlayer.unMute(); ytPlayer.setVolume(musicVolume); if (!wasOff && !ezanMuted) ytPlayer.playVideo(); } catch (e) {} }
+  musicTap.classList.remove('show');
+}
+musicTap.addEventListener('click', startMusicSound);
+document.addEventListener('keydown', () => { if (musicTap.classList.contains('show')) startMusicSound(); });
+initMusic();
+/* Firma bilgisi /api/site-info'dan (27.09.2026): HTML'deki ornek degerler
+   yerine ayarlar kullanilir; ayar bossa telefon/slogan gizlenir. */
+fetch(API_BASE + '/api/site-info').then(r => r.ok ? r.json() : Promise.reject()).then(si => {
+  if (si.companyName) { document.querySelector('header .brand .name').textContent = si.companyName; document.title = si.companyName + ' - TV Menü'; }
+  const sl = document.querySelector('header .brand .slogan'); sl.textContent = si.slogan || ''; sl.hidden = !si.slogan;
+  let d = String(si.phone || '').replace(/\D/g, '');
+  if (d.startsWith('90') && d.length === 12) d = '0' + d.slice(2);
+  const t = d.length === 11 ? `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7, 9)} ${d.slice(9)}` : d;
+  const box = document.querySelector('footer .tel');
+  if (box) { if (t) document.getElementById('telText').textContent = t; else box.remove(); }
+}).catch(() => { /* eski sunucu: server.js'in doldurdugu degerler kalir */ });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "server": "",
+  "database": "",
+  "user": "",
+  "password": "",
+  "options": {
+    "encrypt": false,
+    "trustServerCertificate": true
+  },
+  "port": 4500,
+  "activationKey": "",
+  "cloudServerUrl": "https://app.ornek-alanadi.com",
+  "siteSettings": {
+    "companyName": "Restoranınız",
+    "slogan": "",
+    "phone": "",
+    "address": "",
+    "website": "",
+    "facebook": "",
+    "instagram": "",
+    "whatsapp": ""
+  },
+  "deliveryZones": [],
+  "sqlcmdPath": "",
+  "sambaposMenuId": null,
+  "directOrderSend": false,
+  "remoteGarsonAllowed": false,
+  "adminEmails": []
+}

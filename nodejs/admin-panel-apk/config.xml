@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.alfapos.qrmenuadmin" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>QR Menü Yönetim</name>
+    <description>AlfaPOS QR Menü - Yönetim Paneli</description>
+    <author email="destek@alfapos.com" href="https://ornek-alanadi.com">AlfaPOS</author>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-navigation href="https://*/*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <preference name="AndroidXEnabled" value="true" />
+    <preference name="AndroidInsecureFileModeEnabled" value="true" />
+    <platform name="android">
+        <allow-intent href="market:*" />
+    </platform>
+</widget>

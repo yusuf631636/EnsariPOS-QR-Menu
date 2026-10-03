@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Öz Urfa Yusuf Usta - Menü</title>
+<link rel="icon" href="./logo.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<script>
+/* menu.ornek-alanadi.com/<slug> sonunda "/" olmadan acilirsa goreli linkler slug'i kaybeder */
+if (location.hostname === 'menu.ornek-alanadi.com' && /^\/[^\/]+$/.test(location.pathname)) location.replace(location.pathname + '/' + location.search + location.hash);
+</script>
+<style>
+  /* ===== Yeni musteri arayuzu (27.09.2026). Kullanici istekleri: "farklı bir
+     arayüz, mobilde ve pc'de ön numara, net anlaşılabilir"; "açılış ekranında
+     kategoriler kartlarla görünsün, üst sekme kategoriler sadece kategoriye
+     girince görünsün"; "kampanyalar ve durumlar kısmı daha düzgün"; "logo
+     profesyonel olsun".
+     Iki ekran: ANA EKRAN (kampanya + durum kartlari + arama + kategori
+     kartlari) ve KATEGORI EKRANI (#k/<kategori>: ust kategori cubugu / PC'de
+     sol liste, urunler, PC'de sag sepet). Veri canli: /api/menu,
+     /api/campaigns, /api/delivery-zones. Sepet siparis.html ile ORTAK.
+     --brand satiri server.js tarafindan tema rengiyle degistirilir. ===== */
+  :root{--brand:#3498db;
+    --bg:#f6f3ed;--card:#fff;--text:#1d1916;--muted:#76695c;--line:#e8e0d3;
+    --gold:#d9a21b;--gold2:#f3cf6b;--green:#1e8e3e;--shadow:0 6px 20px rgba(40,25,10,.08)}
+  body.dark{--bg:#14110e;--card:#211c18;--text:#f4eee6;--muted:#b3a697;--line:#3a322b;--shadow:0 6px 20px rgba(0,0,0,.35)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:92px}
+  a{color:inherit} button{font-family:inherit;cursor:pointer} img{display:block}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 14px}
+  [hidden]{display:none!important}
+
+  /* ---------- Ust bar + logo ---------- */
+  .top{position:sticky;top:0;z-index:50;background:var(--brand);background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 55%,#000));color:#fff;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+  .top-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 14px}
+  .logo{position:relative;flex:none;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--brand) 70%,#fff) 0%,color-mix(in srgb,var(--brand) 80%,#000) 75%);
+    box-shadow:0 0 0 2px var(--gold),0 0 0 4px rgba(255,255,255,.12),0 6px 14px rgba(0,0,0,.35);overflow:hidden;text-decoration:none}
+  .logo .mono{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:18px;letter-spacing:.5px;color:var(--gold2);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:4px}
+  /* yatay (genis) logolar yuvarlak yerine beyaz plaka icinde gosterilir */
+  .logo.wide{width:132px;border-radius:12px;box-shadow:0 0 0 2px var(--gold),0 6px 14px rgba(0,0,0,.3)}
+  .logo.wide img{padding:5px 8px}
+  .logo.wide + .brand .n{font-size:15px}
+  footer .logo.wide{width:200px;height:62px}
+  @media(max-width:380px){.logo.wide{width:104px}}
+  @media(max-width:639px){.logo.wide + .brand .n{display:none}.logo.wide + .brand .s{font-size:12.5px;white-space:normal;line-height:1.25}}
+  @media(min-width:1024px){.logo.wide{width:170px;height:54px}}
+  .brand{min-width:0;flex:1;text-decoration:none}
+  .brand .n{font-size:17px;font-weight:900;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;letter-spacing:.4px}
+  .brand .s{font-size:12px;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;font-style:italic}
+  .nav{display:none;gap:2px}
+  .nav a{padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14.5px;opacity:.92}
+  .nav a:hover{background:rgba(255,255,255,.12)}
+  .tbtn{height:40px;min-width:40px;padding:0 12px;border:none;border-radius:11px;background:rgba(255,255,255,.14);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+  .tbtn.call{background:var(--gold);color:#2a1c05}
+  .tbtn.call span{display:none}
+
+  /* ---------- ANA EKRAN: kampanyalar ---------- */
+  .promos{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:14px 0 2px;scrollbar-width:none}
+  .promos::-webkit-scrollbar{display:none}
+  .promo{position:relative;flex:0 0 100%;scroll-snap-align:start;aspect-ratio:16/9;border-radius:20px;overflow:hidden;color:#fff;background:linear-gradient(120deg,var(--brand),#000);display:flex;flex-direction:column;justify-content:flex-end;padding:18px;box-shadow:var(--shadow)}
+  .promo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .promo::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.45) 45%,rgba(0,0,0,0) 75%)}
+  .promo > *:not(img){position:relative;z-index:1}
+  .promo .tag{position:absolute!important;top:14px;left:14px;background:var(--gold);color:#2a1c05;font-size:11px;font-weight:900;padding:5px 11px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
+  .promo h2{margin:0 0 8px;font-size:21px;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .promo .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .promo .pr{display:flex;align-items:baseline;gap:8px;font-weight:900}
+  .promo .pr s{opacity:.7;font-weight:700;font-size:14px}
+  .promo .pr b{font-size:26px;color:var(--gold2)}
+  .promo button{border:none;border-radius:12px;background:var(--gold);color:#2a1c05;font-weight:900;font-size:14.5px;padding:11px 16px;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+  .dots{display:flex;justify-content:center;gap:6px;margin:8px 0 0}
+  .dots i{width:7px;height:7px;border-radius:4px;background:var(--line);transition:.25s}
+  .dots i.on{background:var(--gold);width:20px}
+
+  /* ---------- ANA EKRAN: durum kartlari ---------- */
+  .status{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+  .st{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 6px;text-decoration:none;box-shadow:var(--shadow)}
+  .st .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:color-mix(in srgb,var(--brand) 12%,transparent)}
+  .st b{font-size:13px;line-height:1.1}
+  .st small{font-size:11.5px;color:var(--muted);line-height:1.2}
+  .st.open small{color:var(--green);font-weight:800}
+
+  /* ---------- Arama ---------- */
+  .search{position:relative}
+  .search input{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;padding:14px 16px 14px 46px;font-size:16px;outline:none;box-shadow:var(--shadow)}
+  .search input:focus{border-color:var(--brand)}
+  .search::before{content:"🔍";position:absolute;left:16px;top:50%;transform:translateY(-50%);opacity:.55}
+
+  /* ---------- ANA EKRAN: kategori kartlari ---------- */
+  .h2{display:flex;align-items:baseline;justify-content:space-between;margin:20px 2px 12px}
+  .h2 h2{margin:0;font-size:21px;font-weight:900}
+  .h2 small{color:var(--muted);font-weight:700;font-size:13px}
+  .cgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .cc{position:relative;display:block;aspect-ratio:1/1;border-radius:18px;overflow:hidden;text-decoration:none;color:#fff;background:linear-gradient(135deg,#e9d3a6,#c89d55);box-shadow:var(--shadow)}
+  .cc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .4s}
+  .cc:hover img{transform:scale(1.06)}
+  .cc .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:52px;padding-bottom:30px}
+  .cc::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,rgba(0,0,0,.15) 55%,rgba(0,0,0,0) 100%)}
+  .cc .t{position:absolute;left:12px;right:12px;bottom:11px;z-index:1}
+  .cc .t b{display:block;font-size:16px;font-weight:900;line-height:1.15;text-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .cc .t small{font-size:12px;opacity:.9;font-weight:700}
+
+  /* ---------- KATEGORI EKRANI ---------- */
+  .catbar{position:sticky;top:68px;z-index:40;background:var(--bg);margin:0 -14px;padding:10px 14px 8px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--line)}
+  .backbtn{flex:none;height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px}
+  .pills{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+  .pills::-webkit-scrollbar{display:none}
+  .pills a{flex:none;padding:10px 15px;border-radius:999px;background:var(--card);border:1px solid var(--line);text-decoration:none;font-weight:800;font-size:13.5px;white-space:nowrap}
+  .pills a.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .layout{display:block}
+  .sidecats{display:none}
+  .ctitle{display:flex;align-items:baseline;gap:8px;margin:16px 2px 12px}
+  .ctitle h2{margin:0;font-size:24px;font-weight:900}
+  .ctitle small{color:var(--muted);font-weight:700}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .p{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s,box-shadow .12s}
+  .p:active{transform:scale(.985)}
+  .p .ph{position:relative;flex:none;width:108px;height:108px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#f3e3c3,#e2c58f);display:flex;align-items:center;justify-content:center;font-size:38px}
+  .p .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .p .bd{flex:1;min-width:0;display:flex;flex-direction:column}
+  .p .nm{font-size:16px;font-weight:800;line-height:1.25}
+  .p .ds{font-size:13px;color:var(--muted);line-height:1.4;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .p .ft{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px}
+  .p .pr{font-size:17px;font-weight:900}
+  .p .pr small{font-size:11px;color:var(--muted);font-weight:700;display:block;line-height:1.1}
+  .p .pr s{font-size:12.5px;color:var(--muted);font-weight:700;margin-right:4px}
+  .add{border:none;border-radius:12px;background:var(--brand);color:#fff;font-weight:900;font-size:15px;padding:10px 16px;white-space:nowrap}
+  .add.in{background:var(--green)}
+  .add[disabled]{background:var(--line);color:var(--muted)}
+  .badge{position:absolute;top:6px;left:6px;z-index:1;background:#e53935;color:#fff;font-size:10.5px;font-weight:900;padding:3px 7px;border-radius:7px;text-transform:uppercase}
+  .none{padding:40px 10px;text-align:center;color:var(--muted);font-weight:700}
+
+  /* ---------- Sepet ---------- */
+  .cartbar{position:fixed;left:10px;right:10px;bottom:10px;z-index:60;display:none;align-items:center;gap:12px;background:var(--green);color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);text-decoration:none;font-size:16px;max-width:560px;margin:0 auto}
+  .cartbar.show{display:flex}
+  .cartbar .cnt{background:#fff;color:var(--green);font-weight:900;min-width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+  .cartbar .t{font-weight:900;margin-left:auto}
+  .side{display:none}
+
+  /* ---------- Urun penceresi ---------- */
+  .back{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.5);display:none}
+  .back.show{display:block}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;background:var(--card);color:var(--text);border-radius:22px 22px 0 0;max-height:90vh;overflow:auto;transform:translateY(105%);transition:transform .25s ease}
+  .sheet.show{transform:none}
+  .sheet .im{height:230px;background:linear-gradient(135deg,#f3e3c3,#e2c58f);position:relative;display:flex;align-items:center;justify-content:center;font-size:64px}
+  .sheet .im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .sheet .x{position:absolute;top:12px;right:12px;z-index:2;width:40px;height:40px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:20px}
+  .sheet .in{padding:18px}
+  .sheet h4{margin:0;font-size:22px}
+  .sheet p{color:var(--muted);line-height:1.5;margin:8px 0 14px}
+  .opt{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;font-weight:700}
+  .opt.on{border-color:var(--brand)}
+  .opt i{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none}
+  .opt.on i{border-color:var(--brand);background:radial-gradient(circle,var(--brand) 0 45%,transparent 50%)}
+  .opt b{margin-left:auto}
+  .qty{display:flex;align-items:center;gap:14px;margin:14px 0}
+  .qty button{width:46px;height:46px;border-radius:12px;border:none;background:var(--line);color:var(--text);font-size:22px;font-weight:900}
+  .qty span{font-size:20px;font-weight:900;min-width:24px;text-align:center}
+  .big{display:block;width:100%;border:none;border-radius:14px;background:var(--green);color:#fff;font-size:17px;font-weight:900;padding:16px;text-align:center;text-decoration:none}
+  .toast{position:fixed;left:50%;top:80px;z-index:100;transform:translate(-50%,-20px);opacity:0;pointer-events:none;background:#1d1916;color:#fff;padding:12px 18px;border-radius:12px;font-weight:800;font-size:14px;transition:.25s;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- Alt bilgi ---------- */
+  footer{margin-top:34px;background:var(--brand);background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 55%,#000));color:#fff;text-align:center;padding:28px 16px 32px}
+  footer .logo{margin:0 auto 10px;width:60px;height:60px}
+  footer .logo .mono{font-size:22px}
+  footer .n{font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:.4px}
+  footer .s{color:var(--gold2);font-style:italic;margin-top:4px}
+  footer .soc{display:flex;justify-content:center;gap:10px;margin:16px 0}
+  footer .soc a{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;text-decoration:none}
+  footer .soc svg{width:22px;height:22px;fill:#fff}
+  footer .lk a{opacity:.85;text-decoration:none;margin:0 8px;font-size:14px}
+
+  /* ---------- Tablet ---------- */
+  @media(min-width:640px){
+    .cgrid{grid-template-columns:repeat(3,1fr)}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .promo{flex-basis:78%;aspect-ratio:16/8}
+    .tbtn.call span{display:inline}
+  }
+  /* ---------- Bilgisayar ---------- */
+  @media(min-width:1024px){
+    body{padding-bottom:0}
+    .wrap,.top-in{padding-left:24px;padding-right:24px}
+    .logo{width:54px;height:54px}.logo .mono{font-size:20px}
+    .brand .n{font-size:21px}
+    .nav{display:flex}
+    .promo{flex-basis:calc(50% - 6px);aspect-ratio:16/8;padding:24px}
+    .promo h2{font-size:26px}
+    .status{grid-template-columns:repeat(3,1fr);gap:14px}
+    .st{flex-direction:row;text-align:left;padding:16px 18px;gap:14px}
+    .st .ic{width:48px;height:48px;font-size:24px}
+    .st b{font-size:15px}.st small{font-size:13px}
+    .cgrid{grid-template-columns:repeat(4,1fr);gap:18px}
+    .cc{aspect-ratio:4/3}
+    .cc .t b{font-size:19px}
+    .catbar{display:none}
+    .layout{display:grid;grid-template-columns:220px minmax(0,1fr) 320px;gap:24px;align-items:start;margin-top:18px}
+    .sidecats{display:flex;flex-direction:column;gap:2px;position:sticky;top:90px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;box-shadow:var(--shadow);max-height:calc(100vh - 110px);overflow:auto}
+    .sidecats .home{font-weight:900;color:var(--brand)}
+    .sidecats a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px}
+    .sidecats a:hover{background:var(--bg)}
+    .sidecats a.on{background:var(--brand);color:#fff}
+    .sidecats a img,.sidecats a .ci{width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none;background:linear-gradient(135deg,#f3e3c3,#e2c58f);display:flex;align-items:center;justify-content:center;font-size:15px}
+    .ctitle{margin-top:0}
+    .grid{grid-template-columns:repeat(2,1fr);gap:14px}
+    .side{display:flex;flex-direction:column;position:sticky;top:90px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);max-height:calc(100vh - 110px);overflow:hidden}
+    .side h3{margin:0;padding:16px 18px;font-size:19px;border-bottom:1px solid var(--line)}
+    .side .ls{flex:1;overflow:auto;padding:4px 18px}
+    .side .r{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:12px 0;border-bottom:1px dashed var(--line)}
+    .side .r .n{font-weight:800;font-size:14.5px}
+    .side .r .n small{display:block;color:var(--muted);font-weight:600}
+    .side .r .t{font-weight:900}
+    .side .r .q{grid-column:1/-1;display:flex;align-items:center;gap:10px}
+    .side .r .q button{width:32px;height:32px;border-radius:9px;border:none;background:var(--line);color:var(--text);font-weight:900;font-size:17px}
+    .side .emp{padding:40px 10px;text-align:center;color:var(--muted);font-weight:700}
+    .side .fo{padding:16px 18px;border-top:1px solid var(--line)}
+    .side .tot{display:flex;justify-content:space-between;font-size:18px;font-weight:900;margin-bottom:12px}
+    .side .fo a.dis{pointer-events:none;opacity:.45}
+    body.incat .cartbar{display:none!important}
+    .cartbar{left:auto;right:24px;bottom:24px;width:440px}
+    .sheet{left:50%;right:auto;top:50%;bottom:auto;width:min(560px,92vw);border-radius:22px;transform:translate(-50%,-45%);opacity:0;pointer-events:none;transition:.22s}
+    .sheet.show{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+    .p:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(40,25,10,.14)}
+  }
+  @media(min-width:1400px){ .grid{grid-template-columns:repeat(3,1fr)} .p{flex-direction:column} .p .ph{width:100%;height:170px} }
+</style>
+</head>
+<body>
+<!-- server.js bu linkleri ayarlardaki gercek degerlerle degistirir; JS buradan okur -->
+<div hidden id="siteLinks">
+  <a id="lTel" href="tel:+902243660605"></a>
+  <a id="lWa" href="https://wa.me/902243660605"></a>
+  <a id="lFb" href="https://www.facebook.com/ozurfayusufusta"></a>
+  <a id="lIg" href="https://www.instagram.com/ozurfayusufusta"></a>
+  <span id="lName">Öz Urfa Yusuf Usta</span>
+</div>
+
+<header class="top">
+  <div class="top-in">
+    <a class="logo" href="#" data-home><span class="mono" id="mono"></span><img src="./logo.png" alt="" onload="if(this.naturalWidth/this.naturalHeight>1.6)this.parentNode.classList.add('wide')" onerror="this.remove()"></a>
+    <a class="brand" href="#" data-home><div class="n">Öz Urfa Yusuf Usta</div><div class="s">Bursa'nın Lezzet Durağı</div></a>
+    <nav class="nav"><a href="#" data-home>Ana Sayfa</a><a href="./siparis">Sipariş</a><a href="./iletisim">İletişim</a></nav>
+    <button class="tbtn" id="themeBtn" title="Gece / gündüz">🌙</button>
+    <a class="tbtn call" id="callBtn" href="tel:">📞 <span>Hemen Ara</span></a>
+  </div>
+</header>
+
+<!-- ============ ANA EKRAN ============ -->
+<main class="wrap" id="home">
+  <div class="promos" id="promos" hidden></div>
+  <div class="dots" id="dots"></div>
+
+  <div class="status">
+    <a class="st" href="./siparis"><span class="ic">🛵</span><span><b>Paket Servis</b><br><small>Online sipariş verin</small></span></a>
+    <a class="st" id="mapBtn" target="_blank" rel="noopener"><span class="ic">📍</span><span><b>Yol Tarifi</b><br><small>Haritada göster</small></span></a>
+    <div class="st" id="hoursBox"><span class="ic">🕒</span><span><b>Çalışma Saatleri</b><br><small id="hoursTxt">Bilgi için arayın</small></span></div>
+  </div>
+
+  <div class="search"><input id="q" type="search" placeholder="Ne yemek istersiniz? Ürün arayın…" autocomplete="off"></div>
+
+  <div class="h2"><h2>Menümüz</h2><small id="catCount"></small></div>
+  <div class="cgrid" id="cgrid"><div class="none">Menü yükleniyor…</div></div>
+</main>
+
+<!-- ============ KATEGORI EKRANI ============ -->
+<main class="wrap" id="catView" hidden>
+  <div class="catbar"><button class="backbtn" data-home>← Ana Sayfa</button><div class="pills" id="pills"></div></div>
+  <div class="layout">
+    <nav class="sidecats" id="sidecats"></nav>
+    <section>
+      <div class="ctitle"><h2 id="ctName"></h2><small id="ctCount"></small></div>
+      <div class="grid" id="plist"></div>
+    </section>
+    <aside class="side">
+      <h3>🛒 Sepetiniz</h3>
+      <div class="ls" id="sideList"></div>
+      <div class="fo"><div class="tot"><span>Toplam</span><span id="sideTot">0 ₺</span></div><a class="big" id="sideGo" href="./siparis#sepet">Siparişi Tamamla ›</a></div>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <div class="logo"><span class="mono" id="mono2"></span><img src="./logo.png" alt="" onload="if(this.naturalWidth/this.naturalHeight>1.6)this.parentNode.classList.add('wide')" onerror="this.remove()"></div>
+  <div class="n">Öz Urfa Yusuf Usta</div>
+  <div class="s">Bursa'nın Lezzet Durağı</div>
+  <div class="soc">
+    <a id="fFb" target="_blank" rel="noopener" title="Facebook"><svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.51 1.49-3.9 3.78-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg></a>
+    <a id="fIg" target="_blank" rel="noopener" title="Instagram"><svg viewBox="0 0 24 24"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5a4.25 4.25 0 0 0 4.25 4.25h8.5a4.25 4.25 0 0 0 4.25-4.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 1.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm5.25-2.75a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg></a>
+    <a id="fWa" target="_blank" rel="noopener" title="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.66 15l-1.3 4.7 4.83-1.27A10 10 0 1 0 12 2zm5.3 14.1c-.22.63-1.3 1.2-1.8 1.27-.46.07-1.04.1-1.68-.1-.39-.12-.88-.29-1.52-.56-2.67-1.15-4.41-3.84-4.55-4.02-.13-.18-1.08-1.44-1.08-2.75s.69-1.95.93-2.22c.25-.27.54-.34.72-.34h.52c.17 0 .39-.06.61.46.22.54.76 1.85.83 1.98.07.14.11.29.02.47-.09.18-.13.29-.27.45-.13.16-.28.35-.4.47-.13.13-.27.28-.12.55.16.27.7 1.15 1.5 1.86 1.03.92 1.9 1.2 2.17 1.34.27.13.43.11.58-.07.16-.18.67-.78.85-1.05.18-.27.36-.22.61-.13.25.09 1.57.74 1.84.88.27.13.45.2.52.31.07.11.07.65-.15 1.28z"/></svg></a>
+    <a id="fTel" title="Telefon"><svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8z"/></svg></a>
+  </div>
+  <div class="lk"><a href="./siparis">Online Sipariş</a>·<a href="./iletisim">İletişim</a>·<a href="./gizlilik-politikasi">Gizlilik Politikası</a></div>
+</footer>
+
+<a class="cartbar" id="cartbar" href="./siparis#sepet"><span class="cnt" id="cbN">0</span><span>Sepeti Gör · Siparişi Tamamla</span><span class="t" id="cbT">0 ₺</span></a>
+
+<div class="back" id="back"></div>
+<div class="sheet" id="sheet">
+  <div class="im" id="shIm"></div>
+  <div class="in">
+    <h4 id="shN"></h4>
+    <p id="shD"></p>
+    <div id="shO"></div>
+    <div id="shTagsWrap" style="display:none;margin:10px 0"></div>
+    <div class="qty"><button id="shM">−</button><span id="shQ">1</span><button id="shP">+</button></div>
+    <button class="big" id="shAdd">Sepete Ekle</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = location.pathname.replace(/\/(yeni|index)(\.html)?\/?$/, '').replace(/\/+$/, '');
+const CART_KEY = 'ultra_cart_paket'; /* siparis.html ile AYNI anahtar - sepet ortak */
+let menu = [], cart = {}, current = null;
+try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}'); } catch { cart = {}; }
+/* 27.09.2026 (kullanici istegi: "acılı/soğansız gibi seçenekler, SambaPOS'un
+   kendi sistemiyle") - siparis.html ile AYNI mantık, admin bir grup
+   seçmediyse tags[] boş gelir ve bu bölüm hiç gösterilmez. */
+let orderTags = { groupId: null, minSelected: 0, maxSelected: 0, tags: [] };
+fetch(API_BASE + '/api/order-tags').then(r => r.json()).then(d => { orderTags = d; }).catch(() => {});
+
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => { n = Number(n) || 0; return n.toLocaleString('tr-TR', Number.isInteger(n) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺'; };
+const clean = s => String(s || '').replace(/\\[rnt]|[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+const title = s => clean(s).toLocaleLowerCase('tr-TR').replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toLocaleUpperCase('tr-TR'));
+const slug = s => clean(s).toLocaleLowerCase('tr-TR').replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-|-$/g, '');
+const imgSrc = it => it.imageUrl ? API_BASE + '/' + it.imageUrl.replace(/^\.\//, '') : '';
+const portionsOf = it => (it.portions && it.portions.length ? it.portions : [{ id: 'default', name: 'Adet', price: it.price }]).filter(p => Number(p.price) > 0);
+const minPrice = it => { const ps = portionsOf(it).map(p => Number(p.price)); return ps.length ? Math.min(...ps) : 0; };
+const allItems = () => menu.flatMap(c => c.items);
+function saveCart() { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {} renderCart(); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(el._h); el._h = setTimeout(() => el.classList.remove('show'), 1800); }
+function addToCart(it, p, qty, silent, tagIds) {
+  tagIds = Array.isArray(tagIds) ? [...tagIds].sort((a, b) => a - b) : [];
+  const tagNames = orderTags.tags.filter(t => tagIds.includes(t.id)).map(t => t.name);
+  const key = it.id + '_' + p.id + (tagIds.length ? '_' + tagIds.join('-') : '');
+  if (!cart[key]) cart[key] = { itemId: it.id, portionId: p.id, name: clean(it.name), portionName: p.name, price: Number(p.price), qty: 0, tagIds, tagNames };
+  cart[key].qty += qty;
+  saveCart(); if (current) renderProducts();
+  if (!silent) toast('✓ ' + clean(it.name) + ' sepete eklendi');
+}
+const inCartQty = it => Object.values(cart).filter(c => String(c.itemId) === String(it.id)).reduce((s, c) => s + c.qty, 0);
+
+/* ---------------- Tema ---------------- */
+if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+const themeIcon = () => $('themeBtn').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+$('themeBtn').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light'); themeIcon(); };
+themeIcon();
+
+/* ---------------- Firma bilgisi: /api/site-info (27.09.2026) ----------------
+   HTML'deki ornek degerler (Oz Urfa telefonu/sosyal medyasi) KULLANILMAZ.
+   Ayarda bos olan bilgi sayfada hic gosterilmez - her musteride dogru calisir. */
+function setMono(name) {
+  const words = clean(name).split(' ').filter(Boolean);
+  const m = ((words[0] || '').charAt(0) + (words[1] || '').charAt(0)).toLocaleUpperCase('tr-TR');
+  $('mono').textContent = $('mono2').textContent = m || '★';
+}
+function applySite(si) {
+  const name = si.companyName || 'Menü', slogan = si.slogan || '';
+  document.querySelectorAll('.brand .n, footer > .n').forEach(el => el.textContent = name);
+  document.querySelectorAll('.brand .s, footer > .s').forEach(el => { el.textContent = slogan; el.hidden = !slogan; });
+  document.title = name + ' - Menü';
+  setMono(name);
+  const telDigits = String(si.phone || '').replace(/\D/g, '');
+  const show = (el, href) => { if (href) { el.href = href; el.hidden = false; } else el.hidden = true; };
+  show($('callBtn'), telDigits ? 'tel:' + telDigits : '');
+  show($('fTel'), telDigits ? 'tel:' + telDigits : '');
+  show($('fWa'), si.whatsapp ? 'https://wa.me/' + si.whatsapp : '');
+  show($('fFb'), si.facebook);
+  show($('fIg'), si.instagram);
+  const q = si.address ? name + ' ' + si.address : name;
+  $('mapBtn').href = /maps|goo\.gl|g\.page/.test(si.googleMaps || '') && !/review/.test(si.googleMaps) ? si.googleMaps : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+  if (si.workingHours) $('hoursTxt').textContent = si.workingHours;
+}
+setMono(document.querySelector('.brand .n').textContent);
+fetch(API_BASE + '/api/site-info').then(r => r.ok ? r.json() : Promise.reject()).then(applySite).catch(() => {
+  /* eski sunucu (uc nokta yok): server.js'in doldurdugu linklere don */
+  const tel = $('lTel').getAttribute('href');
+  $('callBtn').href = tel; $('fTel').href = tel; $('fWa').href = $('lWa').getAttribute('href');
+  $('fFb').href = $('lFb').getAttribute('href'); $('fIg').href = $('lIg').getAttribute('href');
+  $('mapBtn').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(clean($('lName').textContent));
+});
+
+/* ---------------- Kampanyalar: "Sepete Ekle" urunleri dogrudan sepete koyar ---------------- */
+async function loadPromos() {
+  let list = [];
+  try { list = (await fetch(API_BASE + '/api/campaigns').then(r => r.json())).campaigns || []; } catch {}
+  if (!list.length) return;
+  const box = $('promos'); box.hidden = false;
+  box.innerHTML = list.map((c, i) => `<div class="promo">
+      ${c.imageUrl ? `<img src="${esc(API_BASE + '/' + String(c.imageUrl).replace(/^\.\//, ''))}" alt="" onerror="this.remove()">` : ''}
+      ${c.tag ? `<span class="tag">${esc(c.tag)}</span>` : ''}
+      <h2>${esc(clean(c.title).replace(/\^/g, ''))}</h2>
+      <div class="row">
+        <div class="pr">${c.oldPrice ? `<s>${esc(c.oldPrice)} ₺</s>` : ''}${c.newPrice ? `<b>${esc(c.newPrice)} ₺</b>` : ''}</div>
+        <button data-promo="${i}">🛒 Sepete Ekle</button>
+      </div>
+    </div>`).join('');
+  $('dots').innerHTML = list.length > 1 ? list.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('') : '';
+  const idx = () => Math.round(box.scrollLeft / (box.firstElementChild.offsetWidth + 12));
+  box.onscroll = () => $('dots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === idx()));
+  box.querySelectorAll('[data-promo]').forEach(b => b.onclick = () => {
+    const c = list[+b.dataset.promo];
+    let added = 0;
+    for (const want of (c.items || [])) {
+      const it = allItems().find(x => clean(x.name).toLocaleLowerCase('tr-TR') === clean(want.name).toLocaleLowerCase('tr-TR'));
+      const p = it && portionsOf(it)[0];
+      if (it && p) { addToCart(it, p, want.qty || 1, true); added++; }
+    }
+    if (!added) { location.href = './siparis'; return; }
+    toast('✓ ' + clean(c.title).replace(/\^/g, '') + ' sepete eklendi');
+  });
+  if (list.length > 1) setInterval(() => { if (document.hidden || $('home').hidden) return; const n = (idx() + 1) % list.length; box.scrollTo({ left: n * (box.firstElementChild.offsetWidth + 12), behavior: 'smooth' }); }, 6000);
+}
+
+/* ---------------- Menu ---------------- */
+async function loadMenu() {
+  try {
+    const data = await fetch(API_BASE + '/api/menu?type=delivery').then(r => r.json());
+    const byName = new Map();
+    for (const c of (data.categories || [])) {
+      const n = clean(c.name); if (!n || !c.items || !c.items.length) continue;
+      if (!byName.has(n)) byName.set(n, { name: n, slug: slug(n), items: [] });
+      byName.get(n).items.push(...c.items);
+    }
+    menu = [...byName.values()];
+  } catch { $('cgrid').innerHTML = '<div class="none">Menü yüklenemedi, sayfayı yenileyin.</div>'; return; }
+  renderHome(); route(); renderCart();
+}
+const catPhoto = c => c.items.find(x => x.imageUrl);
+function renderHome() {
+  $('catCount').textContent = menu.length + ' kategori';
+  $('cgrid').innerHTML = menu.map(c => { const ph = catPhoto(c); return `<a class="cc" href="#k/${esc(c.slug)}">
+      ${ph ? `<img src="${esc(imgSrc(ph))}" alt="" loading="lazy" onerror="this.remove()">` : '<span class="ico">🍽️</span>'}
+      <span class="t"><b>${esc(title(c.name))}</b><small>${c.items.length} ürün</small></span></a>`; }).join('');
+}
+
+/* ---------------- Ekran gecisi (#k/<kategori>, #ara/<metin> veya ana ekran) ---------------- */
+function route() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, ''));
+  if (h.startsWith('k/')) { const c = menu.find(x => x.slug === h.slice(2)); if (c) return showCat(c); }
+  if (h.startsWith('ara/')) return showSearch(h.slice(4));
+  current = null;
+  $('home').hidden = false; $('catView').hidden = true; document.body.classList.remove('incat');
+}
+window.addEventListener('hashchange', () => { route(); window.scrollTo(0, 0); });
+document.addEventListener('click', e => { if (e.target.closest('[data-home]')) { e.preventDefault(); if (location.hash) history.pushState('', '', location.pathname + location.search); route(); window.scrollTo(0, 0); } });
+
+function openCatView() { $('home').hidden = true; $('catView').hidden = false; document.body.classList.add('incat'); }
+function navHtml(cls) {
+  return menu.map(c => { const ph = catPhoto(c); return `<a href="#k/${esc(c.slug)}" class="${current && current.slug === c.slug ? 'on' : ''}">${cls ? (ph ? `<img src="${esc(imgSrc(ph))}" alt="" onerror="this.remove()">` : '<span class="ci">🍽️</span>') : ''}${esc(title(c.name))}</a>`; }).join('');
+}
+function showCat(c) {
+  current = c; openCatView();
+  $('pills').innerHTML = navHtml(false);
+  $('sidecats').innerHTML = `<a href="#" data-home class="home">← Ana Sayfa</a>` + navHtml(true);
+  const on = $('pills').querySelector('.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+  $('ctName').textContent = title(c.name); $('ctCount').textContent = c.items.length + ' ürün';
+  renderProducts();
+}
+function showSearch(q) {
+  const t = q.toLocaleLowerCase('tr-TR');
+  const items = allItems().filter(it => clean(it.name).toLocaleLowerCase('tr-TR').includes(t) || String(it.description || '').toLocaleLowerCase('tr-TR').includes(t));
+  current = { slug: '', name: q, items, search: true }; openCatView();
+  $('pills').innerHTML = navHtml(false); $('sidecats').innerHTML = `<a href="#" data-home class="home">← Ana Sayfa</a>` + navHtml(true);
+  $('ctName').textContent = `🔍 "${q}"`; $('ctCount').textContent = items.length + ' sonuç';
+  renderProducts();
+}
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && $('q').value.trim()) { location.hash = 'ara/' + encodeURIComponent($('q').value.trim()); $('q').blur(); } });
+$('q').addEventListener('search', () => { if ($('q').value.trim()) location.hash = 'ara/' + encodeURIComponent($('q').value.trim()); });
+
+function card(it) {
+  const pr = minPrice(it), multi = portionsOf(it).length > 1, q = inCartQty(it);
+  const badge = (it.badges || [])[0]; const bt = badge ? (typeof badge === 'string' ? badge : (badge.label || badge.name || '')) : '';
+  return `<div class="p" data-id="${esc(it.id)}">
+    <div class="ph">${it.imageUrl ? `<img src="${esc(imgSrc(it))}" alt="" loading="lazy" onerror="this.remove()">` : '🍽️'}${bt ? `<span class="badge">${esc(bt)}</span>` : ''}</div>
+    <div class="bd">
+      <div class="nm">${esc(clean(it.name))}</div>
+      ${it.description ? `<div class="ds">${esc(it.description)}</div>` : ''}
+      <div class="ft">
+        <div class="pr">${pr ? `${multi ? '<small>başlayan fiyat</small>' : ''}${it.oldPrice ? `<s>${esc(it.oldPrice)}</s>` : ''}${money(pr)}` : '<small>Fiyat için<br>bizi arayın</small>'}</div>
+        ${pr ? `<button class="add ${q ? 'in' : ''}" data-add>${q ? `✓ ${q} adet` : (multi ? 'Seçenekler' : '+ Ekle')}</button>` : '<button class="add" disabled>—</button>'}
+      </div>
+    </div></div>`;
+}
+function renderProducts() {
+  if (!current) return;
+  $('plist').innerHTML = current.items.length ? current.items.map(card).join('') : '<div class="none">Ürün bulunamadı</div>';
+  $('plist').querySelectorAll('.p').forEach(el => el.onclick = e => {
+    const it = allItems().find(x => String(x.id) === el.dataset.id);
+    if (!it || !minPrice(it)) return;
+    const ps = portionsOf(it);
+    if (e.target.closest('[data-add]') && ps.length === 1) { addToCart(it, ps[0], 1); return; }
+    openSheet(it);
+  });
+}
+
+/* ---------------- Urun penceresi (porsiyon + adet) ---------------- */
+let shItem = null, shPortion = null, shQty = 1, shTagIds = [];
+function openSheet(it) {
+  shItem = it; shQty = 1; shPortion = portionsOf(it)[0]; shTagIds = [];
+  $('shIm').innerHTML = (it.imageUrl ? `<img src="${esc(imgSrc(it))}" alt="" onerror="this.remove()">` : '🍽️') + '<button class="x" id="shX">✕</button>';
+  $('shX').onclick = closeSheet;
+  $('shN').textContent = clean(it.name); $('shD').textContent = it.description || '';
+  $('shQ').textContent = 1; renderOpts(); renderTags();
+  $('back').classList.add('show'); $('sheet').classList.add('show');
+}
+function renderOpts() {
+  const ps = portionsOf(shItem);
+  $('shO').innerHTML = ps.map(p => `<div class="opt ${p === shPortion ? 'on' : ''}" data-p="${esc(p.id)}"><i></i>${esc(/^(Adet|Normal)$/.test(p.name) ? 'Porsiyon' : p.name)}<b>${money(p.price)}</b></div>`).join('');
+  $('shO').querySelectorAll('[data-p]').forEach(el => el.onclick = () => { shPortion = ps.find(p => String(p.id) === el.dataset.p); renderOpts(); });
+  $('shAdd').textContent = `Sepete Ekle · ${money(shPortion.price * shQty)}`;
+}
+/* 27.09.2026 (kullanici istegi: "acılı/soğansız gibi seçenekler, SambaPOS'un
+   kendi sistemiyle") - siparis.html'deki AYNI mantık: admin bir grup
+   seçmediyse hiç gösterilmez; tek seçim izinliyse (maxSelected===1) yeni
+   seçim eskisinin yerine geçer. */
+function renderTags() {
+  const wrap = $('shTagsWrap');
+  if (!orderTags.tags.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const singleSelect = orderTags.maxSelected === 1;
+  wrap.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px">` + orderTags.tags.map(t => `
+    <button type="button" data-tag-id="${t.id}"
+      style="padding:8px 14px;border-radius:999px;border:1.5px solid ${shTagIds.includes(t.id) ? 'var(--brand)' : '#ddd'};background:${shTagIds.includes(t.id) ? 'var(--brand)' : '#fff'};color:${shTagIds.includes(t.id) ? '#fff' : '#333'};font-size:13px;font-weight:600;cursor:pointer">
+      ${esc(t.name)}${t.price ? ' +' + money(t.price) : ''}
+    </button>`).join('') + `</div>`;
+  wrap.querySelectorAll('[data-tag-id]').forEach(el => el.onclick = () => {
+    const id = Number(el.dataset.tagId);
+    if (shTagIds.includes(id)) { shTagIds = shTagIds.filter(x => x !== id); }
+    else {
+      shTagIds = singleSelect ? [id] : [...shTagIds, id];
+      if (orderTags.maxSelected > 0 && shTagIds.length > orderTags.maxSelected) shTagIds.shift();
+    }
+    renderTags();
+  });
+}
+function closeSheet() { $('back').classList.remove('show'); $('sheet').classList.remove('show'); }
+$('back').onclick = closeSheet;
+$('shM').onclick = () => { shQty = Math.max(1, shQty - 1); $('shQ').textContent = shQty; renderOpts(); };
+$('shP').onclick = () => { shQty++; $('shQ').textContent = shQty; renderOpts(); };
+$('shAdd').onclick = () => { addToCart(shItem, shPortion, shQty, false, shTagIds); closeSheet(); };
+
+/* ---------------- Sepet (telefonda alt cubuk, bilgisayarda sag panel) ---------------- */
+function renderCart() {
+  const rows = Object.entries(cart), n = rows.reduce((s, [, c]) => s + c.qty, 0), t = rows.reduce((s, [, c]) => s + c.qty * c.price, 0);
+  $('cartbar').classList.toggle('show', n > 0); $('cbN').textContent = n; $('cbT').textContent = money(t);
+  $('sideTot').textContent = money(t); $('sideGo').classList.toggle('dis', !n);
+  $('sideList').innerHTML = rows.length ? rows.map(([k, c]) => `<div class="r"><div class="n">${esc(c.name)}${c.portionName && !/^(Normal|Adet)$/.test(c.portionName) ? `<small>${esc(c.portionName)}</small>` : ''}${c.tagNames && c.tagNames.length ? `<small style="color:var(--brand)">${esc(c.tagNames.join(', '))}</small>` : ''}</div><div class="t">${money(c.price * c.qty)}</div>
+      <div class="q"><button data-dec="${esc(k)}">−</button><b>${c.qty}</b><button data-inc="${esc(k)}">+</button></div></div>`).join('')
+    : '<div class="emp">Sepetiniz boş.<br>Ürünlerin yanındaki <b>+ Ekle</b> ile başlayın.</div>';
+  $('sideList').querySelectorAll('[data-inc]').forEach(b => b.onclick = () => { cart[b.dataset.inc].qty++; saveCart(); renderProducts(); });
+  $('sideList').querySelectorAll('[data-dec]').forEach(b => b.onclick = () => { const k = b.dataset.dec; if (--cart[k].qty <= 0) delete cart[k]; saveCart(); renderProducts(); });
+}
+
+loadMenu().then(loadPromos);
+</script>
+</body>
+</html>

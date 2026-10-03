@@ -1,0 +1,505 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <script src="scripts/Jquery.min.js"></script>
+    <script src="scripts/Queries.js"></script>
+    <script src="scripts/circle-progress.js"></script>
+    <script src="cordova-shim.js"></script>
+    <script>
+        document.addEventListener("deviceready", onDeviceReady, false);
+        var dateObj = new Date();
+        var month = dateObj.getUTCMonth() + 1; //months from 1-12
+        var day = dateObj.getUTCDate();
+        var year = dateObj.getUTCFullYear();
+        var newdate = month + "/" + day + "/" + year;
+        var online = false;
+        var storage = window.localStorage;
+        var deviceid = "";
+        var latitude = storage.getItem("lat");
+        var longitude = storage.getItem("lng");
+        var onSuccess = function (position) {
+            console.log(position);
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+            storage.setItem("lat", position.coords.latitude);
+            storage.setItem("lng", position.coords.longitude);
+            $(".konum").html(storage.getItem("ok"));
+        };
+        function onError(error) {
+            console.log('code: ' + error.code + '\n' +
+                'message: ' + error.message + '\n');
+        }
+        var query;
+        function licenceControl(uuid, email, lat, lng, licenseid,callback) {
+            if (online) {
+                var query;
+                console.log("Lisans var: "+licenseid)
+                    if (licenseid==null) 
+                    {
+                        allisans="";
+                        $.get("https://cpapi.sambapos.com/customer-licenses/?format=json&license_email="+email+"&license_key=MobileClient", function(data, status){
+                   
+                          if (data.count>0)     
+                            {
+                                $.each(data.results, function (key, item) {
+                                lisansbilgi=item.product;
+                                    if (lisansbilgi.license_name=="MobileClient")
+                                        {
+                                            if (item.is_activated==false)
+                                                {allisans=item.id;}
+
+                                        }
+                        
+                                });
+                            }
+
+
+                            if (allisans!="")
+                            {
+                            
+                                var settings = {
+                                 "async": true,
+                                    "crossDomain": true,
+                                    "url": "https://cpapi.sambapos.com/customer-licenses/"+allisans+"/activate/",
+                                    "method": "POST",
+                                    "headers": {
+                                    "content-type": "application/json",
+                                    "cache-control": "no-cache"
+                                     },
+                                    "processData": false,
+                                    "data": "{\"extra_data\": [{\"key\": \"device_serial_number\",\"value\": \""+uuid+"\"}]}"
+                                 }
+
+
+                       
+
+                                $.ajax(settings).done(function (response) {
+                                console.log("cevap-->"+ JSON.stringify(response))
+                                callback(true);
+                                 });
+                            }
+                            else
+                            {
+                                callback(false)
+                            }
+
+
+                    
+                         });
+                    } 
+                    else
+                    {
+                        callback(true);
+                    }
+
+            
+            } 
+            
+         
+            
+            else {
+                navigator.notification.alert(storage.getItem("no_internet"), function () {
+                    window.location = "x.html";
+                }, storage.getItem("connection_error"), storage.getItem("ok"));
+            }
+
+
+        }
+        function licencelist(uuid, email, callback) {
+            var licenseid = null;
+            var query2 = { query: "{'query':{'username':'"+email+"','licencekey':'MobileClient'}}" };
+            
+
+            $.get("https://cpapi.sambapos.com/customer-licenses/?format=json&license_email="+email+"&license_key=MobileClient", function(data, status){
+                    console.log("Bulunan Lisans Sayısı: "+ data.count)
+                    console.log(JSON.stringify(data))
+                    if (data.count>0)
+                    {
+                    $.each(data.results, function (key, item) {
+                        lisansbilgi=item.product;
+                        if (lisansbilgi.license_name=="MobileClient")
+                            {
+                               
+
+                                extrabilgi=item.extra_data;
+                                if (extrabilgi.length>0) {
+
+                                   
+
+                                    if (extrabilgi[0].key == "device_serial_number") {
+                                        if (extrabilgi[0].value==uuid)
+                                        {
+                                        licenseid = item.id;
+                                        console.log(licenseid);
+                                        storage.setItem("licenseid", licenseid);
+                                        }
+                                    }
+                                }
+
+                            }
+                    });
+                }
+                    callback(licenseid);
+              });
+           
+
+
+
+
+            //$.post('https://b2b.sambapos.com/Site/Api/LicenceList', query2, function (data) {
+
+              
+            //    $.each(data[0].list, function (key, item) {
+            //        var customdata = JSON.parse(item.CustomData);
+            //        if (customdata != null) {
+            //            if (customdata[0].value == uuid) {
+            //                licenseid = item.Id;
+            //                console.log(licenseid);
+            //                storage.setItem("licenseid", licenseid);
+            //            }
+            //        }
+            //    });
+            //    callback(licenseid);
+            //});
+        }
+        //var query = { query: "{'query':{'username':'ornek@example.com','licencekey':'MobileClient','list':[{'name':'appkey','value':'0000000000000000','lat':1500,'lng':1600}]}}" };
+        //$.post('https://b2b.sambapos.com/Site/Api/LicenceUpdate', query,
+        //            function (data) {
+        //                console.log(data);
+        //            });
+        //console.log(query);
+        var maxAge = Infinity, timeout = 4000;
+        function onDeviceReady()
+        {
+            document.addEventListener("backbutton", yourCallbackFunction, false);
+            deviceid = device.uuid;
+            storage.setItem("deviceid", deviceid);
+            navigator.geolocation.getCurrentPosition(onSuccess, function (error) {
+                console.log("Failed to retrieve high accuracy position - trying to retrieve low accuracy");
+                navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: true });
+            }, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: false });
+            //navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: Infinity, enableHighAccuracy: false });
+        }
+        function yourCallbackFunction() {
+
+        }
+        /* Elle yazmak yerine SambaPOS'tan GERCEK Terminal/Departman/Adisyon Tipi/
+           Menu/Masa Ekrani listesini otomatik cek (kullanici istegi, 26.09.2026:
+           "degerleri otomatik cekmez mi") - server.js'teki /api/admin/terminal-config-options
+           dogrudan SambaPOS veritabanini sorgular. Ayni sayfa hem LAN'dan (onek yok)
+           hem tunelden slug/qrmenu onekiyle acilabildigi icin API_BASE ayni desenle
+           hesaplanir (bkz. garson.html). */
+        function apiBaseForConfig() { return location.pathname.replace(/\/garson-web(\/.*)?$/, '').replace(/\/+$/, ''); }
+        /* 26.09.2026 GERI ALINDI: "birden çok seçenek seçilebilsin" istegi
+           uygulanmisti ama kullanici canli testte kirdi - Queries.js bu
+           degerlerin HEPSINI (terminal/departman/adisyon tipi/menu/varlik
+           ekrani) TEK, TAM ESLESEN bir isim olarak GraphQL sorgularina
+           (registerTerminal, getMenu, getEntityScreenItems...) gonderiyor.
+           Virgulle birlestirilmis "A,B" gibi bir deger HICBIR SambaPOS
+           kaydiyla eslesmiyor - kullanici bulgusu: "birden fazla secince
+           ekran bos geldi". Bu yuzden TEK secim'e donuldu, [multiple]
+           HTML'den de kaldirildi (asagida). */
+        function fillConfigSelect(id, values, savedValue, fallbackRegex) {
+            var $sel = $('#' + id);
+            $sel.empty();
+            (values || []).forEach(function (v) { $sel.append($('<option></option>').val(v).text(v)); });
+            var chosen = (savedValue && values.indexOf(savedValue) !== -1) ? savedValue : null;
+            if (!chosen && fallbackRegex) { var m = values.find(function (v) { return fallbackRegex.test(v); }); if (m) chosen = m; }
+            if (!chosen && values.length === 1) chosen = values[0];
+            if (chosen) $sel.val(chosen);
+        }
+        function revertToManualInput(id, savedValue) {
+            $('<input type="text" class="form-control">').attr('id', id).val(savedValue || '').each(function () {
+                $('#' + id).replaceWith(this);
+            });
+        }
+        function loadConfigOptions() {
+            $('#entity').off('change').on('change', function () {
+                $('#entityType').val($(this).find(':selected').attr('data-type') || '');
+            });
+            $.getJSON(apiBaseForConfig() + '/api/admin/terminal-config-options').done(function (data) {
+                fillConfigSelect('terminal', data.terminals || [], storage.getItem('terminal'));
+                fillConfigSelect('department', data.departments || [], storage.getItem('department'), /restoran/i);
+                fillConfigSelect('ticket', data.ticketTypes || [], storage.getItem('ticketType'), /adisyon/i);
+                fillConfigSelect('menu', data.menus || [], storage.getItem('menu'));
+                fillConfigSelect('automation', data.automationCommands || [], storage.getItem('automation'), /^hesap yaz$/i);
+                var screens = data.entityScreens || [];
+                var $entity = $('#entity');
+                $entity.empty();
+                screens.forEach(function (s) {
+                    $entity.append($('<option></option>').val(s.name).attr('data-type', s.entityType || '').text(s.name + (s.entityType ? ' (' + s.entityType + ')' : '')));
+                });
+                var savedEntity = storage.getItem('entityScreen');
+                var names = screens.map(function (s) { return s.name; });
+                var chosenEntity = (savedEntity && names.indexOf(savedEntity) !== -1) ? savedEntity : null;
+                if (!chosenEntity) { var m = screens.find(function (s) { return /masa/i.test(s.name) || /masa/i.test(s.entityType || ''); }); if (m) chosenEntity = m.name; }
+                if (chosenEntity) $entity.val(chosenEntity);
+                $entity.trigger('change');
+            }).fail(function () {
+                /* SambaPOS'a baglanilamadiysa (oturum suresi dolmus/SQL erisim
+                   sorunu) dropdown'lar KULLANILAMAZ hale kalirdi - kullanici
+                   bulgusu (26.09.2026): "elle giriş izni yok". Gercek elle
+                   yazilabilir kutucuklara donulur, onceki kayitli deger korunur. */
+                revertToManualInput('terminal', storage.getItem('terminal'));
+                revertToManualInput('department', storage.getItem('department'));
+                revertToManualInput('ticket', storage.getItem('ticketType'));
+                revertToManualInput('menu', storage.getItem('menu'));
+                revertToManualInput('automation', storage.getItem('automation'));
+                revertToManualInput('entity', storage.getItem('entityScreen'));
+                $('#entityType').removeAttr('readonly');
+            });
+        }
+        $(document).ready(function () {
+
+
+            $("#program_settings_caption").html(storage.getItem("program_settings"));
+            $("#message_server_ip_caption").html(storage.getItem("message_server_ip"));
+            $("#sambamarket_email_caption").html(storage.getItem("sambamarket_email_lan"));
+            $("#ticket_type_caption").html(storage.getItem("ticket_type_lan"));
+            $("#terminal_caption").html(storage.getItem("terminal_lan"));
+            $("#department_caption").html(storage.getItem("department_lan"));
+            $("#entity_screen_name_caption").html(storage.getItem("entity_screen_name"));
+            $("#entity_type_caption").html(storage.getItem("entity_type"));
+            $("#menu_caption").html(storage.getItem("menu_lan"));
+            $("#print_bill_caption").html(storage.getItem("print_bill_automation_name"));
+            $("#ticket_tag_caption").html(storage.getItem("ticket_tag"));
+            $("#ticket_tag_caption").html(storage.getItem("ticket_tag"));
+            $("#exit_option_caption").html(storage.getItem("exit_option"));
+            $("#buttonsave span").html(storage.getItem("save"));
+            $("#geridon span").html(storage.getItem("close"));
+            $("#select_db_language_caption").html(storage.getItem("select_db_language"));
+            
+            $("#go_exit_caption").html(storage.getItem("log_out_when_ticket_was_closed"));
+            $("#do_you_ask_caption").html(storage.getItem("ask_when_the_ticket_was_closed"));
+
+            //deviceid oluşturma
+            $.ajax({
+                url: 'https://www.google.com',
+                success: function (data) {
+                    console.log("connection success")
+                    online = true;
+                },
+                error: function (data) {
+                    console.log("connection fail")
+                    online = false;
+                }
+            });
+            
+            //storage ayarlarının textboxlara çekilmesi
+            var lastterminal = storage.getItem("terminal");
+            var lastdepartment = storage.getItem("department");
+            var lasttickettype = storage.getItem("ticketType");
+            $("#email").val(storage.getItem("email"));
+            //$("#user").val(storage.getItem("username"));
+            loadConfigOptions();
+            $("#automation").val(storage.getItem("automation"));
+            $("#ip").val(storage.getItem('ip'));
+            $("#cid").val(storage.getItem("clientId"));
+            $("#cs").val(storage.getItem("clientSecret"));
+            $("#ticketTag").val(storage.getItem("ticketTag"));
+            $("#geridon")
+                .click(function () {
+                    window.location = "x.html";
+                });
+            storage.getItem("sorulsun") ? $("#soru").prop('checked', true) : $("#soru").prop('checked', false);
+            storage.getItem("exit") ? $("#exit").prop('checked', true) : $("#exit").prop('checked', false);
+            //storage.getItem("dil") ? $("#dil").prop('checked', true) : $("#dil").prop('checked', false);
+
+            $("#dil").val(storage.getItem("dil"));
+
+            //Config ayarlarının storage çekilmesi
+            $('.kaydet').click(function () {
+                $('#circle').circleProgress({
+                    value: 1,
+                    size: 80,
+                    fill: {
+                        gradient: ["#3399ff"]
+                    },
+                    animation: { duration: 5000 }
+                });
+                var email = $("#email").val();
+                var ticketType = $("#ticket").val();
+                var terminal = $("#terminal").val();
+                var department = $("#department").val();
+                var entityScreen = $("#entity").val();
+                var menu = $("#menu").val();
+                var entityType = $("#entityType").val();
+                var ip = $("#ip").val();
+                var ticketTag = $("#ticketTag").val();
+                var automation = $("#automation").val();
+                automation = automation == "" ? "Hesap Yaz" : automation;
+                console.log(automation);
+                if ($("#soru").is(':checked')) {
+                    storage.setItem("sorulsun", "evet");
+                } else {
+                    storage.removeItem("sorulsun");
+                }
+                if ($("#exit").is(':checked')) {
+                    storage.setItem("exit", "evet");
+                } else {
+                    storage.removeItem("exit");
+                }
+
+                if ($("#dil").is(':checked')) {
+                    storage.setItem("dil", "1");
+                } else {
+                    storage.removeItem("dil");
+                }
+                storage.setItem("dil", $("#dil").val());
+
+                ticketTag != "" ? storage.setItem("ticketTag", ticketTag) : storage.removeItem("ticketTag");
+                if ((terminal != lastterminal || department != lastdepartment || ticketType != lasttickettype) &&
+                    storage.getItem("terminalId")) {
+                    unregisterTerminal(storage.getItem("terminalId"));
+                }
+                storage.setItem("email", email);
+                //storage.setItem("username", username);
+                storage.setItem("ticketType", ticketType);
+                storage.setItem("terminal", terminal);
+                storage.setItem("department", department);
+                storage.setItem("entityScreen", entityScreen);
+                storage.setItem("entityType", entityType);
+                storage.setItem("menu", menu);
+                storage.setItem("automation", automation);
+                storage.setItem("ip", ip);
+               
+                /* 20.09.2026 kullanıcı isteği: "lisans sorgulaması yok" -
+                   SambaPOS'un kendi bulut lisans sunucularına (cpapi.sambapos.com)
+                   giden bu kontrol, bu kurulumda geçerli bir lisansa bağlı
+                   OLMADIĞI için hep "Bağlantı Hatası"/null ile başarısız oluyordu.
+                   Ayarlar artık dış sunucuya hiç sorulmadan direkt kaydedilir. */
+                storage.setItem("licence", "true");
+                storage.setItem("TTL", 18);
+                storage.setItem("lastControl", newdate);
+                window.location = 'x.html';
+            });
+            $("#geridon").click(function () {
+                window.location = "x.html";
+            });
+        });
+        var myVar;
+        function start(callback) {
+            myVar = setTimeout(function () { callback() },
+                5000);
+        }
+
+        function stop() {
+            clearTimeout(myVar);
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .circles {
+            position: fixed;
+            z-index: 1;
+            top:40%;
+            left:42%;
+        }
+    </style>
+</head>
+<body>
+    <div class="circles" id="circle"></div>
+<div class="container">
+    <h2 id="program_settings_caption">Program Settings</h2>
+    <form class="form-horizontal" style="z-index:0">
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="message_server_ip_caption">Message Server Ip:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="ip" >
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="sambamarket_email_caption">SambaMarket EMail:</label>
+            <div class="col-sm-10">
+                <input type="email" class="form-control" id="email" >
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="ticket_type_caption">Ticket Type:</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="ticket"><option value="">Yükleniyor…</option></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="terminal_caption">Terminal:</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="terminal"><option value="">Yükleniyor…</option></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="department_caption">Department:</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="department"><option value="">Yükleniyor…</option></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="entity_screen_name_caption">Entity Screen Name:</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="entity"><option value="">Yükleniyor…</option></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="entity_type_caption">Entity Type:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="entityType" readonly>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="menu_caption">Menu:</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="menu"><option value="">Yükleniyor…</option></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="print_bill_caption">Print Bill Automation Name:</label>
+            <div class="col-sm-10">
+                <select class="form-control" id="automation"><option value="">Yükleniyor…</option></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="ticket_tag_caption">Ticket Tag:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="ticketTag" >
+                <input type="checkbox" name="tag" id="soru" value="Sorulsun mu?" /><span id="do_you_ask_caption"> Do you ask when you open the ticket?</span><br>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="exit_option_caption">Exit Option:</label>
+            <div class="col-sm-10">
+                <input type="checkbox" name="exit" id="exit" value="Cıkıs" /><span id="go_exit_caption">Go Exit After Close Ticket </span><br>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" id="select_db_language_caption">Select DB Language:</label>
+            <div class="col-sm-10">
+                 <select name="dil" id="dil">
+                     <option value="1" selected>English</option>
+                     <option value="2">Türkçe</option>
+                     <option value="3">Portugais</option>
+                     <option value="4">Français</option>
+                     <option value="5">Español</option>
+                     <option value="6">Italiano</option>    
+
+</select>
+
+               
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-4 col-sm-10">
+                <button type="button" class="btn btn-success kaydet" id="buttonsave"><span>Save</span></button>
+                <button type="button" id="geridon" class="btn btn-warning"><span>-</span></button>
+            </div>
+        </div>
+    </form>
+    <div class="konum"></div>
+</div>
+   
+</body>
+</html>

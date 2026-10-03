@@ -1,0 +1,827 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <script src="scripts/Jquery.min.js"></script>
+    <script src="scripts/jquery.signalR-2.2.0.min.js"></script>
+    <script src="scripts/Queries.js"></script>
+    <script src="scripts/SignalR.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="cordova-shim.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+<script>
+    document.addEventListener("deviceready", onDeviceReady, false);
+    var storage = window.localStorage;
+    var dateObj = new Date();
+    var month = dateObj.getUTCMonth() + 1;
+    var day = dateObj.getUTCDate();
+    var year = dateObj.getUTCFullYear();
+    var newdate = month + "/" + day + "/" + year;
+    var online = false;
+    var deviceid = "";
+    var oldTickets = [];
+    var terminalID;
+    var email = storage.getItem("email");
+    var latitude = storage.getItem("lat");
+    var longitude = storage.getItem("lng");
+    var licenseid = storage.getItem("licenseid");
+
+    // Varlıkların ekrana listelenmesi update işlemi
+    function updateVarlıklar() {
+        $("#Masalar").empty();
+        getEntityScreenItems(function (result) {
+            result.forEach(function (item) {
+                if (item.name.length > 24) {
+                    $("#Masalar").append('<input type="button" class="btn btn-default mBBtn" style="width:24%;background-color:' + item.color + ';color:' + item.labelColor + ';" value="' + item.name + '" onclick=buldiger(this) ></input>');
+                } else {
+                    $("#Masalar").append('<input type="button" class="btn btn-default mBtn" style="width:24%;background-color:' + item.color + ';color:' + item.labelColor + ';" value="' + item.name + '" onclick=buldiger(this) ></input>');
+                }
+            });
+        });
+    }
+    // SignalR bağlantısı açma
+    connect(function (message) {
+        if (message.indexOf('TICKET_REFRESH')) {
+            updateVarlıklar();
+        }
+    });
+    // Varlıkların ekrana listelenmesi
+    function varlıklar(callback) {
+        $("#Masalar").empty();
+        getEntityScreenItems(function (result) {
+            result.forEach(function (item) {
+                if (item.name.length > 20) {
+                    $("#Masalar").append('<button type="button" class="btn btn-default mBBtn" style="width:24%;background-color:' + item.color + ';color:' + item.labelColor + ';" value="' + item.name + '" onclick=buldiger(this) >' + item.name + '</button>');
+                } else {
+                    $("#Masalar").append('<button type="button" class="btn btn-default mBtn" style="width:24%;background-color:' + item.color + ';color:' + item.labelColor + ';" value="' + item.name + '" onclick=buldiger(this) >' + item.name + '</button>');
+                }
+            });
+            callback();
+        });
+    }
+    // TerminalID değiştirme
+    function changeTerminalId(terminalId) {
+        terminalID = terminalId;
+    }
+    // TerminalID güncelleme
+    function updateTerminalId(terminalID) {
+        storage.setItem('terminalId', terminalID);
+        changeTerminalId(terminalID);
+    }
+    var onSuccess = function (position) {
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        storage.setItem("lat", position.coords.latitude);
+        storage.setItem("lng", position.coords.longitude);
+        console.log(latitude + "-" + longitude);
+    };
+    function onError(error) {
+        console.log('code: ' + error.code + '\n' + 'message: ' + error.message + '\n');
+    }
+    var maxAge = 3000, timeout = 4000;
+    function onDeviceReady() {
+        document.addEventListener("backbutton", yourCallbackFunction, false);
+        document.addEventListener("resume", onResume, false);
+        deviceid = device.uuid;
+        console.log(latitude + "-" + longitude);
+        if (latitude == null && longitude == null) {
+            navigator.geolocation.getCurrentPosition(onSuccess, function (error) {
+                console.log("Failed to retrieve high accuracy position - trying to retrieve low accuracy");
+                navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: true });
+            }, { maximumAge: maxAge, timeout: timeout, enableHighAccuracy: false });
+        }
+    }
+    function onResume() {
+        connect();
+    }
+
+    /* ================================================================
+       GARSON ÇAĞRI SİSTEMİ (20.09.2026)
+       Müşterinin telefonundan (garson.html) yaptığı çağrılar buraya
+       düşer. SambaPOS DB'sine hiç dokunmaz - ayrı bir anahtarla korunan
+       uç nokta üzerinden çalışır.
+
+       AKILLI SUNUCU SEÇİMİ (26.09.2026 düzeltmesi - kok neden bulundu):
+       Sabit "ozurfa.ornek-alanadi.com" adresi ESKI kuruluma aitti, bu domain artik
+       hicbir sunucuya yonlenmiyor (530 - DNS/origin hatasi) - "Sunucuya
+       ulasilamadi" hatasinin GERCEK sebebi buydu. Artik TUM barindirma
+       modlarinda (LAN, menu.ornek-alanadi.com/<slug>, app.ornek-alanadi.com/qrmenu)
+       dogru calisan AYNI desen: kendi origin + (varsa) onek. */
+    var GARSON_API = location.origin + location.pathname.replace(/\/garson-web(\/.*)?$/, '').replace(/\/+$/, '');
+    var GARSON_KEY = '14ee960dd9bff4cc0b1406975bae6ae7';
+
+    console.log('[Garson] Hostname:', location.hostname);
+    console.log('[Garson] Kullanılacak API:', GARSON_API);
+    console.log('[Garson] Key:', GARSON_KEY);
+
+    /* Ses: navigator.notification.beep() Android sürümüne göre sessiz
+       kalabiliyor, bunun yerine Web Audio API ile ton üretiyoruz.
+       Android WebView autoplay kısıtı için ilk dokunuşta AudioContext
+       açılıyor. */
+    var garsonAudioCtx = null;
+    function garsonUnlockAudio() {
+        try {
+            garsonAudioCtx = garsonAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            if (garsonAudioCtx.state === 'suspended') garsonAudioCtx.resume();
+        } catch (e) { /* Web Audio yok */ }
+    }
+    document.addEventListener('touchstart', garsonUnlockAudio, { once: true, passive: true });
+    document.addEventListener('click', garsonUnlockAudio, { once: true });
+
+    function garsonBeep() {
+        try {
+            garsonAudioCtx = garsonAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            [0, 0.22, 0.44].forEach(function (delay) {
+                var osc = garsonAudioCtx.createOscillator(), gain = garsonAudioCtx.createGain();
+                osc.type = 'square'; osc.frequency.value = 1000;
+                osc.connect(gain); gain.connect(garsonAudioCtx.destination);
+                var t = garsonAudioCtx.currentTime + delay;
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+                osc.start(t); osc.stop(t + 0.2);
+            });
+        } catch (e) {
+            if (navigator.notification && navigator.notification.beep) navigator.notification.beep(2);
+        }
+    }
+
+    var garsonSeen = [];
+    try { garsonSeen = JSON.parse(storage.getItem('garsonCagriSeen') || '[]'); } catch (e) { garsonSeen = []; }
+    function garsonSaveSeen() {
+        if (garsonSeen.length > 300) garsonSeen = garsonSeen.slice(-300);
+        storage.setItem('garsonCagriSeen', JSON.stringify(garsonSeen));
+    }
+
+    function garsonAck(id) {
+        var url = GARSON_API + '/api/app/waiter-calls/ack?key=' + GARSON_KEY;
+        console.log('[Garson] ACK isteği:', url, 'id:', id);
+        $.ajax({
+            url: url,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id }),
+            success: function () { console.log('[Garson] ACK başarılı:', id); },
+            error: function (xhr, status, err) { console.warn('[Garson] ACK hatası:', status, err); }
+        });
+    }
+
+    function garsonShowBadge(count) {
+        var badge = document.getElementById('garsonCagriBadge');
+        if (!badge) return;
+        if (count > 0) { badge.style.display = 'flex'; badge.textContent = count; }
+        else { badge.style.display = 'none'; }
+    }
+
+    /* ================================================================
+       GARSON ÇAĞRI LİSTESİ
+       27.09.2026 - "Masaya Git" + "Masada olan ürünler" eklendi:
+       1) Her kartta masadaki mevcut siparişler özet + detay olarak
+       2) "🪑 Masaya Git" butonu ile adisyon açılır
+       3) "✓ Gördüm" butonu ile çağrı kapatılır
+       ================================================================ */
+    function garsonShowList(calls) {
+        var host = document.getElementById('garsonCagriList');
+        if (!host) return;
+        if (!calls.length) {
+            host.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Bekleyen çağrı yok.</div>';
+            return;
+        }
+        host.innerHTML = '';
+
+        calls.forEach(function (c) {
+            // ==================== KART ====================
+            var card = document.createElement('div');
+            card.setAttribute('data-table', c.table);
+            card.style.cssText = 'padding:12px 10px;border-bottom:1px solid #eee;';
+
+            // ---------- ÜST: Masa adı + çağrı türü + saat ----------
+            var header = document.createElement('div');
+            header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;';
+            var saat = '';
+            try {
+                saat = new Date(c.time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            } catch (e) { saat = ''; }
+            header.innerHTML =
+                '<div style="flex:1;min-width:0;">' +
+                    '<b style="font-size:16px;color:#c0392b;">🔔 ' + c.table + '</b>' +
+                    '<span style="font-size:12.5px;color:#666;margin-left:8px;">' + c.label + '</span>' +
+                '</div>' +
+                '<span style="font-size:11px;color:#999;white-space:nowrap;">' + saat + '</span>';
+            card.appendChild(header);
+
+            // ---------- ORTA: Masadaki mevcut siparişler ----------
+            var orderToggle = document.createElement('button');
+            orderToggle.type = 'button';
+            orderToggle.className = 'btn btn-default btn-block';
+            orderToggle.style.cssText = 'text-align:left;font-size:12.5px;padding:7px 12px;margin-bottom:6px;border-color:#ccc;';
+            orderToggle.innerHTML = '<span style="color:#888;">⏳ Masadaki siparişler yükleniyor…</span>';
+            card.appendChild(orderToggle);
+
+            var orderBox = document.createElement('div');
+            orderBox.style.cssText = 'display:none;background:#f9f9f9;border:1px solid #e5e5e5;border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;max-height:220px;overflow-y:auto;';
+            card.appendChild(orderBox);
+
+            // Aç / kapat
+            orderToggle.onclick = (function (box) {
+                return function () {
+                    box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
+                };
+            })(orderBox);
+
+            // ---------- Asenkron: masadaki siparişleri çek ----------
+            (function (table, toggleBtn, box) {
+                var url = GARSON_API + '/api/table-status?table=' + encodeURIComponent(table);
+                console.log('[Garson] Masa durumu sorgusu:', url);
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    dataType: 'json',
+                    timeout: 6000,
+                    success: function (data) {
+                        var items = (data && data.items) || [];
+                        var total = Number((data && data.total) || 0);
+
+                        if (!items.length) {
+                            toggleBtn.innerHTML = '<span style="color:#999;">📋 Masada açık sipariş yok</span>';
+                            return;
+                        }
+
+                        var totalQty = items.reduce(function (s, i) { return s + (Number(i.quantity) || 0); }, 0);
+
+                        toggleBtn.innerHTML =
+                            '📋 <b>' + totalQty + ' ürün</b>' +
+                            ' <span style="color:#888;">•</span> ' +
+                            'Toplam: <b style="color:#c0392b;">' + total.toFixed(2).replace('.', ',') + ' TL</b>' +
+                            ' <span style="color:#888;font-size:11px;">(detay için tıklayın)</span>';
+
+                        var html = '';
+                        items.forEach(function (i) {
+                            var portion = (i.portion && i.portion !== 'Adet' && i.portion !== 'Normal')
+                                ? ' <span style="color:#999;font-size:11.5px;">(' + i.portion + ')</span>'
+                                : '';
+                            var lineTotal = ((Number(i.price) || 0) * (Number(i.quantity) || 1));
+                            html +=
+                                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:4px 0;border-bottom:1px dashed #ddd;">' +
+                                    '<span style="flex:1;min-width:0;">' +
+                                        '<b>' + (i.quantity || 1) + '×</b> ' + i.name + portion +
+                                    '</span>' +
+                                    '<b style="white-space:nowrap;color:#333;">' + lineTotal.toFixed(2).replace('.', ',') + ' TL</b>' +
+                                '</div>';
+                        });
+                        html +=
+                            '<div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:6px;border-top:2px solid #ccc;font-weight:bold;font-size:13px;">' +
+                                '<span>TOPLAM</span>' +
+                                '<span style="color:#c0392b;">' + total.toFixed(2).replace('.', ',') + ' TL</span>' +
+                            '</div>';
+                        box.innerHTML = html;
+                    },
+                    error: function (xhr, status) {
+                        console.warn('[Garson] Masa durumu hatası:', status, xhr.status);
+                        toggleBtn.innerHTML = '<span style="color:#c0392b;">⚠️ Siparişler yüklenemedi</span>';
+                    }
+                });
+            })(c.table, orderToggle, orderBox);
+
+            // ---------- ALT: Butonlar ----------
+            var btns = document.createElement('div');
+            btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+
+            // Masaya Git
+            var gotoBtn = document.createElement('button');
+            gotoBtn.type = 'button';
+            gotoBtn.className = 'btn btn-primary';
+            gotoBtn.style.cssText = 'font-weight:600;flex:1;min-width:130px;';
+            gotoBtn.innerHTML = '🪑 Masaya Git';
+            gotoBtn.onclick = (function (table, call) {
+                return function () {
+                    garsonAck(call.id);
+                    $('#myModalGarson').modal('hide');
+
+                    var masaBtn = null;
+                    $('#Masalar button, #Masalar input').each(function () {
+                        var val = $(this).val() || $(this).text();
+                        if (val === table) { masaBtn = this; return false; }
+                    });
+
+                    if (masaBtn) {
+                        setTimeout(function () { buldiger(masaBtn); }, 400);
+                    } else {
+                        var msg = '"' + table + '" masası listede bulunamadı. Masaları yenileyip tekrar deneyin.';
+                        if (navigator.notification && navigator.notification.alert) {
+                            navigator.notification.alert(msg, function () { }, 'Masa Bulunamadı', 'Tamam');
+                        } else {
+                            alert(msg);
+                        }
+                    }
+                };
+            })(c.table, c);
+
+            // Gördüm
+            var ackBtn = document.createElement('button');
+            ackBtn.type = 'button';
+            ackBtn.className = 'btn btn-success';
+            ackBtn.style.cssText = 'font-weight:600;flex:1;min-width:100px;';
+            ackBtn.innerHTML = '✓ Gördüm';
+            ackBtn.onclick = (function (call, cardEl) {
+                return function () {
+                    garsonAck(call.id);
+                    if (cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
+                    if (!host.querySelectorAll('[data-table]').length) {
+                        host.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Bekleyen çağrı yok.</div>';
+                    }
+                    garsonShowBadge(host.querySelectorAll('[data-table]').length);
+                };
+            })(c, card);
+
+            btns.appendChild(gotoBtn);
+            btns.appendChild(ackBtn);
+            card.appendChild(btns);
+
+            host.appendChild(card);
+        });
+    }
+
+    function garsonPoll() {
+        var url = GARSON_API + '/api/app/waiter-calls?key=' + GARSON_KEY;
+        console.log('[Garson] Çağrı sorgusu:', url);
+        $.ajax({
+            url: url,
+            method: 'GET',
+            dataType: 'json',
+            timeout: 6000,
+            success: function (data) {
+                var calls = (data && data.calls) || [];
+                console.log('[Garson] Gelen çağrı sayısı:', calls.length, calls);
+                garsonShowBadge(calls.length);
+                garsonShowList(calls);
+                for (var i = 0; i < calls.length; i++) {
+                    var c = calls[i];
+                    if (garsonSeen.indexOf(c.id) === -1) {
+                        garsonSeen.push(c.id);
+                        garsonSaveSeen();
+                        garsonBeep();
+                        if (navigator.notification && navigator.notification.vibrate) navigator.notification.vibrate(300);
+                    }
+                }
+            },
+            error: function (xhr, status, err) {
+                console.error('[Garson] Çağrı sorgusu başarısız:', status, err);
+                var host = document.getElementById('garsonCagriList');
+                if (!host) return;
+                if (xhr.status === 403) {
+                    host.innerHTML = '<div style="padding:20px;text-align:center;color:#c0392b;">' +
+                        '⚠️ Yetki hatası. Anahtar (GARSON_KEY) yanlış olabilir.<br>' +
+                        'Sunucudaki <code>config.json</code> &gt; <code>waiterAppKey</code> ile eşleştiğinden emin olun.' +
+                        '</div>';
+                } else if (xhr.status === 0) {
+                    host.innerHTML = '<div style="padding:20px;text-align:center;color:#c0392b;">' +
+                        '⚠️ Sunucuya ulaşılamadı.<br>Sunucu çalışıyor mu? (' + GARSON_API + ')' +
+                        '</div>';
+                } else {
+                    host.innerHTML = '<div style="padding:20px;text-align:center;color:#c0392b;">' +
+                        '⚠️ Hata: ' + status + ' (' + (xhr.status || '?') + ')' +
+                        '</div>';
+                }
+            }
+        });
+    }
+
+    function garsonOpenPanel() {
+        $('#myModalGarson').modal('show');
+        garsonPoll();
+    }
+
+    document.addEventListener('deviceready', function () {
+        setTimeout(garsonPoll, 2500);
+        setInterval(garsonPoll, 8000);
+    }, false);
+
+    /* Push bildirimi - Firebase Cloud Messaging (FirebasePlugin).
+       "garson_calls" konusuna abone olunur; uygulama kapalıyken Android'in
+       kendisi bildirimi gösterir, açıkken de burada panel açılır. */
+    document.addEventListener('deviceready', function () {
+        if (!window.FirebasePlugin) return;
+        FirebasePlugin.grantPermission(function (granted) {
+            console.log('Bildirim izni:', granted);
+        }, function (err) { console.log('Bildirim izni hatası:', err); });
+        FirebasePlugin.createChannel({
+            id: 'garson_calls', description: 'Garson Çağrıları', importance: 4,
+            sound: 'default', vibration: true, light: true
+        }, function () { console.log('Bildirim kanalı oluşturuldu'); }, function (err) { console.log('Kanal hatası:', err); });
+        FirebasePlugin.subscribe('garson_calls', function () {
+            console.log('garson_calls konusuna abone olundu');
+        }, function (err) { console.log('Abone olma hatası:', err); });
+        FirebasePlugin.onMessageReceived(function (payload) {
+            console.log('Push alındı:', JSON.stringify(payload));
+            garsonBeep();
+            if (navigator.notification && navigator.notification.vibrate) navigator.notification.vibrate(300);
+            garsonOpenPanel();
+        }, function (err) { console.log('Push alma hatası:', err); });
+    }, false);
+
+    function yourCallbackFunction() {
+    }
+
+    var ttl;
+    function hesapla() {
+        var system;
+        ttl = storage.getItem("TTL");
+        var dateyeni = new Date(newdate);
+        var systemDate = storage.getItem("systemDate");
+        if (systemDate != null) {
+            system = new Date(systemDate);
+            var timedff = Math.abs(dateyeni.getTime() - system.getTime());
+            var diffDay = Math.ceil(timedff / (1000 * 3600 * 24));
+            if (diffDay != 0) {
+                ttl = -1;
+            }
+        }
+    }
+
+    $(function () {
+        hesapla();
+        $(".user").append(config.userName);
+        // TerminalId kontrol
+        if (storage.getItem('terminalId')) {
+            var terminalId = storage.getItem('terminalId');
+            getTerminalExists(terminalId, function (result) {
+                if (result) {
+                    changeTerminalId(terminalID);
+                } else {
+                    registerTerminal(function (terminalId) {
+                        updateTerminalId(terminalId);
+                    });
+                }
+            });
+        } else {
+            registerTerminal(function (terminalId) {
+                updateTerminalId(terminalId);
+            });
+        }
+        varlıklar(function () {
+            if (storage.getItem("refreshToken")) {
+                RefreshToken(storage.getItem("refreshToken"), function (result) { });
+            }
+        });
+    });
+
+    // Tıklanan masanın çalıştırdığı fonksiyon
+    function buldiger(a) {
+        var terminalId = storage.getItem('terminalId');
+        var name = $(a).val();
+        mainclick(a, name, terminalId);
+    }
+
+    function mainclick(a, name, terminalId) {
+        if (ttl > 0) {
+            getTickets(name, function (result) {
+                var tickets = [];
+                var ticketsid = [];
+                switch (result.length) {
+                case 0:
+                    $("#model2").empty();
+                    storage.removeItem('ticketId');
+                    storage.removeItem('load');
+                    storage.removeItem("ttag");
+                    var state = a.getAttribute("name");
+                    var deger = a.value;
+                    storage.setItem("Masa", deger);
+                    if (storage.getItem("sorulsun")) {
+                        var ticketTag = storage.getItem("ticketTag");
+                        $("#model2").append('<div id="myModal2" class="modal fade" role="dialog"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h3>' + ticketTag + '</h3></div><div class="modal-body"><input type="tel" pattern="[0-9]*" id="focus" inputmode="numeric" class="form-control text" /></div><div class="modal-footer"><button type="button" class="btn btn-danger clsBtn" data-dismiss="modal">' + storage.getItem("close") + '</button><input type="button" class="btn btn-info sBtn" value="' + storage.getItem("save") + '"/></div></div></div></div>');
+                        $(".sBtn").val(storage.getItem("save"));
+                        $(".clsBtn").html(storage.getItem("close"));
+                        $("#myModal2").modal('show');
+                        $('#myModal2').on('shown.bs.modal', function () { $("#focus").focus(); });
+                        $(".sBtn").unbind().click(function () {
+                            var tag = $(".text").val();
+                            if (tag != '') {
+                                storage.setItem("ttag", tag);
+                                window.location = "ticket.html";
+                            } else {
+                                storage.removeItem("ttag");
+                                $("#myModal2").modal('hide');
+                            }
+                        });
+                        $(".clsBtn").unbind().click(function () { $("#myModal2").modal('hide'); });
+                    } else {
+                        window.location = "ticket.html";
+                    }
+                    break;
+                case 1:
+                    var ticketID = result[0].id;
+                    storage.setItem('ticketId', ticketID);
+                    loadTerminalTicket(terminalId, ticketID, function (callback) {
+                        storage.setItem('load', 'var');
+                        var deger = a.value;
+                        storage.setItem("Masa", deger);
+                        window.location = "ticket_load.html";
+                    });
+                    break;
+                default:
+                    $("#model").empty();
+                    $("#model").append('<div id="myModal" class="modal fade" role="dialog"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h3 class="tag">' + storage.getItem("select_ticket") + '</h3></div><div class="modal-body"></div><div class="modal-footer"><button type="button" class="btn btn-danger clsBtn" data-dismiss="modal">' + storage.getItem("close") + '</button><input type="button" class="btn btn-info bBtn" value="' + storage.getItem("merge") + '"/></div></div></div></div>');
+                    {
+                        $(".bBtn").val(storage.getItem("merge"));
+                        $(".clsBtn").html(storage.getItem("close"));
+                        $(".tag").html(storage.getItem("select_ticket"));
+                    }
+                    $(".modal-body").empty();
+                    $("#myModal").modal('show');
+                    $.each(result, function (key, item) {
+                        tickets.push(item.id);
+                        $(".modal-body").append('<div style="margin-left:4%;width:90%"><input type="button" data-id=' + item.id + ' value=' + key + ' style="height:50px;width:10%" class="btn btn-default slctMasa" /><button type="button" id=' + item.id + ' style="height:50px;width:90%" class="btn btn-default tBtn">' + storage.getItem("ticket") + ':' + item.id + ' <span class="spn">' + item.remainingAmount.toFixed(2) + '<span></button></div>');
+                    });
+                }
+                // Seçilen masanın arka planı değiştirme
+                $(".slctMasa").unbind().click(function () {
+                    $(this).toggleClass("select");
+                    var id = $(this).data("id");
+                    if ($(this).hasClass("select")) {
+                        $(this).css("background-color", "#3498db");
+                        ticketsid.push(id);
+                    } else {
+                        $(this).css("background-color", "white");
+                        $.each(ticketsid, function (key, item) {
+                            if (item == id) { ticketsid.pop(item); }
+                        });
+                    }
+                });
+                // Tıklanan adisyona gitme
+                $(".tBtn").unbind().click(function () {
+                    var ticketid = $(this).attr("id");
+                    storage.setItem('ticketId', ticketid);
+                    loadTerminalTicket(terminalId, ticketid, function (callback) {
+                        var deger = a.value;
+                        storage.setItem('load', 'var');
+                        storage.setItem("Masa", deger);
+                        window.location = "ticket_load.html";
+                    });
+                });
+                // Adisyonları birleştirme
+                $(".bBtn").unbind().click(function () {
+                    if (ticketsid.length > 1) {
+                        mergeTickets(ticketsid, function (result) {
+                            storage.setItem('ticketId', result);
+                            loadTerminalTicket(terminalId, result, function (callback) {
+                                var deger = a.value;
+                                storage.setItem('load', 'var');
+                                storage.setItem("Masa", deger);
+                                window.location = "ticket_load.html";
+                            });
+                        });
+                    } else {
+                        mergeTickets(tickets, function (result) {
+                            storage.setItem('ticketId', result);
+                            loadTerminalTicket(terminalId, result, function (callback) {
+                                var deger = a.value;
+                                storage.setItem('load', 'var');
+                                storage.setItem("Masa", deger);
+                                window.location = "ticket_load.html";
+                            });
+                        });
+                    }
+                });
+            });
+        } else {
+            if (ttl == -1) {
+                navigator.notification.alert(storage.getItem("message_1"), function () { }, storage.getItem("warning"), storage.getItem("ok"));
+            } else if (ttl == 0) {
+                navigator.notification.alert(storage.getItem("message_2"), function () { storage.removeItem("licence"); window.location = "x.html"; }, storage.getItem("warning"), storage.getItem("ok"));
+            }
+        }
+    }
+</script>
+<style>
+
+     @media only screen and (max-width: 480px) {
+         .navbar {
+             margin-bottom: 0;
+             border-radius: 0;
+         }
+         .spn { float: right; }
+         .mBtn {
+             height: 90px;
+             margin: 1px;
+             white-space: normal;
+         }
+         .mBBtn {
+             height: 90px;
+             margin: 1px;
+             white-space: normal;
+             font-size: 9px;
+         }
+         footer {
+             background-color: #f2f2f2;
+             padding: 25px;
+         }
+         ._masabtn:hover { border: solid 2px; }
+         .myactive { background-color: chocolate; }
+         .tBtn {
+             font-size: medium;
+             border-color: #e6e6e6;
+             background-color: white;
+             color: black;
+             text-align: left;
+         }
+         .masalar {
+             top: 10%;
+             height: 89%;
+         }
+         .head { height: 10%; }
+     }
+    /*Telefon Manzara modu*/
+    @media only screen and (min-width: 480px) and (max-width:760px) {
+        .spn { float: right; }
+        .mBtn {
+            height: 100px !important;
+            font-size: 20px;
+            margin: 1px;
+            white-space: normal;
+        }
+        .bBtn, .clsBtn {
+            font-size: 14px !important;
+            height: 50px !important;
+        }
+        .mBBtn {
+            height: 100px !important;
+            margin: 1px;
+            white-space: normal;
+            font-size: 14px;
+        }
+        .tBtn { font-size: 18px !important; }
+        .slctMasa { font-size: 18px !important; }
+        .bBtn, .clsBtn {
+            height: 4vh;
+            font-size: 18px !important;
+        }
+        .masalar {
+            top: 16%;
+            height: 80%;
+        }
+        .head { height: 5vh; }
+    }
+    /*Tablet*/
+    @media only screen and (min-width: 480px) and (max-width:760px) and (min-height:800px) {
+        .spn { float: right; }
+        .mBtn {
+            height: 100px !important;
+            font-size: 20px;
+            margin: 1px;
+            white-space: normal;
+        }
+        .bBtn, .clsBtn {
+            font-size: 14px !important;
+            height: 50px !important;
+        }
+        .mBBtn {
+            height: 100px !important;
+            margin: 1px;
+            white-space: normal;
+            font-size: 14px;
+        }
+        .tBtn { font-size: 18px !important; }
+        .slctMasa { font-size: 18px !important; }
+        .bBtn, .clsBtn {
+            height: 4vh;
+            font-size: 18px !important;
+        }
+        .masalar {
+            top: 8%;
+            height: 90%;
+        }
+        .head { height: 5vh; }
+    }
+    @media only screen and (min-width: 768px) and (max-height:800px) {
+        .spn { float: right; }
+        .mBtn {
+            height: 120px !important;
+            font-size: 25px;
+            margin: 1px;
+            white-space: normal;
+        }
+        .bBtn, .clsBtn {
+            font-size: 16px !important;
+            height: 50px !important;
+        }
+        .mBBtn {
+            height: 120px !important;
+            margin: 1px;
+            white-space: normal;
+            font-size: 16px;
+        }
+        .tBtn { font-size: 20px !important; }
+        .slctMasa { font-size: 20px !important; }
+        .bBtn, .clsBtn {
+            height: 4vh;
+            font-size: 20px !important;
+        }
+        .masalar {
+            top: 9%;
+            height: 88%;
+        }
+        .head { height: 5vh; }
+    }
+
+    @media only screen and (min-width: 768px) and (min-height:800px) {
+        .spn { float: right; }
+        .mBtn {
+            height: 120px !important;
+            font-size: 25px;
+            margin: 1px;
+            white-space: normal;
+        }
+        .bBtn, .clsBtn {
+            font-size: 16px !important;
+            height: 50px !important;
+        }
+        .mBBtn {
+            height: 120px !important;
+            margin: 1px;
+            white-space: normal;
+            font-size: 16px;
+        }
+        .tBtn { font-size: 20px !important; }
+        .slctMasa { font-size: 20px !important; }
+        .bBtn, .clsBtn {
+            height: 4vh;
+            font-size: 20px !important;
+        }
+        .masalar {
+            top: 6%;
+            height: 92%;
+        }
+        .head { height: 6%; }
+    }
+    .lg {
+        position: relative;
+        top: 8px;
+        margin-left: 8px;
+    }
+    .lgr {
+        position: fixed;
+        top: 8px;
+        float: right;
+        right: 5px;
+    }
+    .logo {
+        height: 30px;
+        width: auto;
+    }
+    .user {
+        position: fixed;
+        top: 14px;
+        float: right;
+        right: 40px;
+        font-size: 15px;
+        font-family: Calibri;
+        margin: 1px 1px 1px 1px;
+    }
+</style>
+</head>
+<body style="background-color: #f5f5f5;">
+    <div class="head" style="top:0px;width:100%;border:none;">
+        <nav class="navbar navbar-inverse" style="border-radius:0 0 0 0;width:100%;display:block;z-index:1;border:none;border-color:#ffffff;background-color:#de3838;color:#ffffff">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <span class="lg"><img class="logo" src="images/SambaPOS-1000px.png" /></span>
+                    <a href="x.html" class="lgr"><img class="logo" src="images/logout-icon2.png" /></a>
+                    <span class="user" style="color:#ffffff;"></span>
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div class="container-fluid bg-3 text-center masalar" style="position:fixed;overflow-y:scroll;z-index:0;">
+        <div class="row">
+            <div class="col-sm-12" id="Masalar">
+
+            </div>
+        </div>
+    </div>
+    <br>
+    <br><br>
+    <div id="model"></div>
+    <div id="model2"></div>
+
+    <button type="button" onclick="garsonOpenPanel()" style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:#de3838;color:#fff;border:none;font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.4);z-index:998;">🔔
+        <span id="garsonCagriBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#111;color:#fff;border-radius:50%;width:22px;height:22px;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid #fff;"></span>
+    </button>
+
+    <div id="myModalGarson" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Garson Çağrıları</h3>
+                </div>
+                <div class="modal-body" id="garsonCagriList" style="max-height:60vh;overflow-y:auto;"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

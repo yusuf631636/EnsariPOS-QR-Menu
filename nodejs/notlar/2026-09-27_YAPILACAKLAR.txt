@@ -1,0 +1,82 @@
+=====================================================================
+  YAPILACAKLAR – 27.09.2026
+  Öz Urfa Yusuf Usta – QR Menü / SambaPOS
+=====================================================================
+
+---------------------------------------------------------------------
+A) RESTORAN (SİZ)
+---------------------------------------------------------------------
+[ ] 1. Test siparişi verin (menu.ornek-alanadi.com/ozurfam/), SambaPOS'ta
+       paketçi atayıp ödeme alın. Hata çıkmamalı. Çıkarsa ekran
+       görüntüsünü saklayın. Test adisyonunu bakım aracıyla silin.
+
+[ ] 2. SambaPOS'ta fiyatı 0 TL olan ürünlerin fiyatını girin:
+       - 10'lu Kıymalı Cantık Menü  (kampanyaya bağlı! 800 TL olmalı)
+       - 10'lu Kuşbaşılı Cantık Menü
+       - 10'lu Karışık Cantık Menü
+       - 3 Kuşbaşılı Kaşarlı Cantık & İçecek Menü
+       - FuseTea
+       - 1 KĞ Çiğköfte
+       - şişe ayran
+
+[ ] 3. Eksik ürün görsellerini yükleyin:
+       Admin paneli > Menü > "Sadece görseli olmayanlar" (şu an 54 ürün)
+       > her ürünün yanındaki "📷 Görsel".
+
+[ ] 4. SambaPOS'taki yazım hatalarını düzeltin:
+       "KAŞARLI SPENCİAL PİDE SUCUKSUZ" (adında fazladan "\r" var)
+       "YUSUF USTA (SPECİAL) PİDE)" (fazla parantez)
+
+[ ] 5. Kampanya başlığındaki "^" işaretini düzeltin:
+       Admin paneli > Kampanyalar > "10 Lahmacun Menü + ^ayran"
+
+[ ] 6. Masa QR kodlarını basacaksanız yeni adresle basın:
+       menu.ornek-alanadi.com/ozurfam/
+       Eski adres (ee-m8z0h1) artık açılmıyor. Instagram, Google İşletme
+       vb. yerlerde eski link varsa değiştirin.
+
+[ ] 7. Kiosk ayarını kontrol edin:
+       Admin > Ayarlar > Sipariş gönderme > "Kiosk siparişlerini ...
+       doğrudan SambaPOS'a gönder" (şu an işaretli = doğrudan gider).
+
+[ ] 8. Bu klasörü (veya zip'i) lisans firmasına iletin.
+
+[ ] 9. Ayda bir SambaPOS_Bakim.bat çalıştırıp raporda [!!] olan
+       satırlara bakın. Şu an dikkat gerektirenler:
+       - AlfaPOS5: 3 adisyon ~20 gündür açık, son yedek 4 gün önce
+       - POSENTEGRAV5: 3 adisyon ~90 gündür açık, son yedek 427 gün önce
+       - AlfaTest: hiç yedek yok
+
+---------------------------------------------------------------------
+B) LİSANS FİRMASI (QR MENÜ GELİŞTİRİCİSİ)
+---------------------------------------------------------------------
+[ ] 1. QRMenu\dosyalar içindeki değişiklikleri kaynak koda işleyin.
+       Kurulum programı tekrar çalışırsa hepsi silinir (27.09 sabahı
+       tam olarak bu oldu). Detay: QRMenu\DEGISIKLIKLER.md,
+       satır satır farklar: QRMenu\farklar, eski haller: QRMenu\onceki_haller
+
+[ ] 2. Kurulum programı config.json'ı sıfırlamasın (dükkan ayarları,
+       aktivasyon anahtarı, kampanyalar siliniyor) ve eski yedekleri
+       silmesin.
+
+[ ] 3. config.json yazımlarını atomik yapın (geçici dosya + yeniden
+       adlandırma). Dosya yarım yazılıp sonundaki "}" eksik kaldı,
+       servis açılmadı.
+
+[ ] 4. Adisyon yazarken TicketVersion'ı tam saniye yazın (milisaniyeli
+       yazılınca SambaPOS paketçi atama/ödemede hata veriyor).
+       DEGISIKLIKLER.md madde 1.1.
+
+[ ] 5. Tickets tablosunda trigger olan kurulumlarda UPDATE ... OUTPUT
+       yerine OUTPUT ... INTO kullanın. DEGISIKLIKLER.md madde 1.2.
+
+[ ] 6. QR müşterisi SambaPOS'a "Müşteriler" varlık tipi yerine ayrı bir
+       tipte (25) ve cari hesaplı yazılıyor. Paketçi/ödeme akışında sorun
+       çıkarsa native akışla aynı yapıya getirilmesi değerlendirilmeli.
+
+[ ] 7. Menü adresi (slug) değişince eski adres 404 veriyor; eski
+       adresten yenisine yönlendirme eklenmesi önerilir (basılı QR'lar
+       bozulmasın).
+
+[ ] 8. Logo yükleme: yeni sayfalar (yeni.html, tv.html vb.) logo yolu
+       güncelleme listesinde olmalı. DEGISIKLIKLER.md madde 4.1.

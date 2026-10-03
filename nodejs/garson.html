@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Garson Paneli</title>
+<link rel="manifest" href="/garson-manifest.webmanifest">
+<link rel="icon" href="./logo.png">
+<meta name="theme-color" content="#e67e22">
+<style>
+  :root{--brand:#e67e22;--bg:#1e1e1e;--text:#f0f0f0;--card:#2a2a2a;--muted:#aaa;--good:#1e8e3e;--bad:#c0392b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);padding-bottom:20px}
+  header{position:sticky;top:0;z-index:10;background:var(--brand);background:linear-gradient(135deg,var(--brand),color-mix(in srgb, var(--brand) 60%, #000));color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  header h1{margin:0;font-size:16px}
+  header button{background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;padding:7px 10px;font-weight:600;cursor:pointer;font-size:12.5px}
+  main{max-width:520px;margin:0 auto;padding:14px}
+  #loginBox{max-width:300px;margin:80px auto;background:var(--card);border-radius:16px;padding:24px;text-align:center}
+  #loginBox input{width:100%;padding:12px;font-size:15px;border:1px solid #444;border-radius:10px;margin:10px 0;background:#1a1a1a;color:#fff}
+  #loginBox input#gPin{font-size:20px;text-align:center;letter-spacing:4px}
+  #loginBox button{width:100%;padding:12px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer}
+  .err{color:#ff6b6b;font-size:13px;margin-top:8px}
+  .section-title{font-size:13px;font-weight:700;color:var(--muted);margin:18px 4px 8px;text-transform:uppercase}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .card h3{margin:0 0 6px;font-size:15px}
+  .card p{margin:4px 0;font-size:13px;color:#ddd}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .actions button{border:0;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:700;font-size:13px}
+  .approve{background:linear-gradient(135deg,var(--good),#0f6e30);color:#fff}
+  .reject{background:linear-gradient(135deg,var(--bad),#8e2a1f);color:#fff}
+  .seen{background:linear-gradient(135deg,var(--brand),color-mix(in srgb, var(--brand) 60%, #000));color:#fff}
+  .goto{background:linear-gradient(135deg,var(--brand),color-mix(in srgb, var(--brand) 60%, #000));color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:9px 12px;font-weight:700;font-size:13px}
+  .muted{color:var(--muted);font-size:13px;text-align:center;padding:26px}
+  .call-card{border-left:4px solid var(--bad)}
+  .table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-bottom:16px}
+  .table-btn{background:var(--card);border:2px solid transparent;border-radius:10px;padding:12px 4px;text-align:center;font-weight:700;font-size:13px;color:var(--text);cursor:pointer}
+  .table-btn.has-order{border-color:var(--good);background:linear-gradient(135deg,rgba(30,142,62,.25),rgba(30,142,62,.08))}
+  .table-btn.has-call{border-color:var(--bad);background:linear-gradient(135deg,rgba(192,57,43,.3),rgba(192,57,43,.1));animation:tblPulse 1.4s ease-in-out infinite}
+  @keyframes tblPulse{0%,100%{box-shadow:0 0 0 rgba(192,57,43,.5)}50%{box-shadow:0 0 10px rgba(192,57,43,.7)}}
+  .table-sect-title{font-size:11.5px;font-weight:700;color:var(--muted);margin:6px 4px}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:50}
+  .modal-backdrop.show{display:block}
+  .table-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--card);border-radius:16px;padding:18px;width:min(92vw,380px);max-height:80vh;overflow:auto;z-index:51;display:none}
+  .table-modal.show{display:block}
+  .table-modal h2{margin:0 0 10px}
+  .table-modal .close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="loginBox">
+  <h1 style="margin-top:0">🍽️ Garson Paneli</h1>
+  <p class="muted" style="padding:0">E-posta ve SambaPOS yönetici PIN'iniz</p>
+  <input id="gEmail" type="email" placeholder="ornek@eposta.com" autocomplete="username">
+  <input id="gPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="current-password">
+  <button id="gLoginBtn">Giriş Yap</button>
+  <div id="gErr" class="err" hidden></div>
+</div>
+
+<div id="mainBox" hidden>
+  <header>
+    <h1>🍽️ Garson Paneli</h1>
+    <div style="display:flex;gap:6px">
+      <a href="./garson-web/index.html" target="_blank" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;padding:7px 10px;font-weight:600;cursor:pointer;font-size:12.5px;text-decoration:none">🎫 Tam Terminal</a>
+      <button id="gLogoutBtn">Çıkış</button>
+    </div>
+  </header>
+  <main>
+    <div class="section-title">🪑 Masalar</div>
+    <div id="tablesList"><div class="muted">Yükleniyor…</div></div>
+    <div class="section-title">🔔 Garson Çağrıları</div>
+    <div id="callsList"><div class="muted">Yükleniyor…</div></div>
+    <div class="section-title">📋 Yeni Siparişler</div>
+    <div id="ordersList"><div class="muted">Yükleniyor…</div></div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="tableBackdrop"></div>
+<div class="table-modal" id="tableModal">
+  <button class="close" id="tableModalClose">✕</button>
+  <h2 id="tableModalTitle">Masa</h2>
+  <div id="tableModalBody"></div>
+</div>
+
+<script>
+/* Ayni kok neden duzeltmesi (20.09.2026, bkz. admin/index.html) - bu sayfa
+   menu.ornek-alanadi.com/<slug>/garson uzerinden VEYA app.ornek-alanadi.com/qrmenu/garson
+   (tunel secim modu) uzerinden acilirsa kok-mutlak "/api/..." yollar onegi
+   atlar. ONCEKI hali SADECE menu.ornek-alanadi.com'u kapsiyordu - app.ornek-alanadi.com
+   /qrmenu uzerinden acilinca (kullanici bulgusu, 25.09.2026: "masa git dediği
+   zaman sayfa açılmıyor") API_BASE bos kaliyor, "Masaya Git"/"api" cagrilari
+   "/qrmenu" onegini atlayip yanlis yere gidiyordu. */
+const API_BASE = location.pathname.replace(/\/garson(\/.*)?$/, '').replace(/\/+$/, '');
+async function api(path, opts) {
+  const res = await fetch(API_BASE + path, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'İstek başarısız.');
+  return data;
+}
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
+function money(n) { return `${(Number(n) || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`; }
+
+/* Ses + insan sesi anonsu (admin paneliyle aynı mantık) */
+let audioCtx = null;
+function unlockAudio() {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch {}
+}
+function beep() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    [0, 0.18, 0.36].forEach(delay => {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = 'sine'; osc.frequency.value = 880;
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      const t = audioCtx.currentTime + delay;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      osc.start(t); osc.stop(t + 0.16);
+    });
+  } catch {}
+}
+function speak(text) {
+  try { if (!('speechSynthesis' in window)) return; const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; speechSynthesis.speak(u); } catch {}
+}
+
+function tableUrl(name) { return API_BASE + '/siparis?masa=' + encodeURIComponent(name); }
+
+/* Masalar görünümü (kullanıcı isteği, 25.09.2026: "garson masaların olduğu,
+   sipariş alabildiği, misafirin çağırdığı masayı görecek, içine girebilecek,
+   gördüm diyebilecek" - daha önce paylaştığı referans uygulamadaki desen). */
+let lastTablesData = null;
+async function loadTables() {
+  const host = document.getElementById('tablesList');
+  try {
+    const { sections } = await api('/api/admin/tables');
+    lastTablesData = sections;
+    if (!sections.length) { host.innerHTML = '<div class="muted">SambaPOS\'ta masa tanımlı değil.</div>'; return; }
+    host.innerHTML = sections.map(section => `
+      <div class="table-sect-title">${escapeHtml(section.name)}</div>
+      <div class="table-grid">
+        ${section.tables.map(t => `<button class="table-btn ${t.hasCall ? 'has-call' : t.hasOrder ? 'has-order' : ''}" data-open-table="${escapeHtml(t.name)}">${escapeHtml(t.name)}</button>`).join('')}
+      </div>`).join('');
+    host.querySelectorAll('[data-open-table]').forEach(b => b.onclick = () => openTableModal(b.dataset.openTable));
+  } catch (error) { host.innerHTML = `<div class="err">${escapeHtml(error.message)}</div>`; }
+}
+async function openTableModal(tableName) {
+  document.getElementById('tableModalTitle').textContent = '🪑 ' + tableName;
+  const body = document.getElementById('tableModalBody');
+  body.innerHTML = '<div class="muted">Yükleniyor…</div>';
+  document.getElementById('tableBackdrop').classList.add('show');
+  document.getElementById('tableModal').classList.add('show');
+  try {
+    const [status, { calls }] = await Promise.all([
+      api('/api/table-status?table=' + encodeURIComponent(tableName)),
+      api('/api/admin/waiter-calls')
+    ]);
+    const call = calls.find(c => c.table === tableName);
+    let html = '';
+    if (call) html += `<div class="card call-card"><h3>🔔 ${escapeHtml(call.label)}</h3><p>${new Date(call.time).toLocaleTimeString('tr-TR')}</p><div class="actions"><button class="seen" data-ack-modal="${call.id}">Gördüm</button></div></div>`;
+    if (status.items && status.items.length) {
+      html += `<div class="card"><h3>Açık Sipariş</h3><p>${status.items.map(i => `${i.quantity} × ${escapeHtml(i.name)}`).join('<br>')}</p><p><b>Toplam: ${money(status.total)}</b></p></div>`;
+    } else if (!call) {
+      html += '<div class="muted">Bu masada bekleyen çağrı veya sipariş yok.</div>';
+    }
+    html += `<div class="actions"><a class="goto" href="${tableUrl(tableName)}" target="_blank">🪑 Masaya Git / Sipariş Ekle</a></div>`;
+    body.innerHTML = html;
+    const ackBtn = body.querySelector('[data-ack-modal]');
+    if (ackBtn) ackBtn.onclick = async () => { await act('/api/admin/waiter-calls/ack', ackBtn.dataset.ackModal, () => {}); closeTableModal(); loadCalls(); loadTables(); };
+  } catch (error) { body.innerHTML = `<div class="err">${escapeHtml(error.message)}</div>`; }
+}
+function closeTableModal() {
+  document.getElementById('tableBackdrop').classList.remove('show');
+  document.getElementById('tableModal').classList.remove('show');
+}
+document.getElementById('tableBackdrop').onclick = closeTableModal;
+document.getElementById('tableModalClose').onclick = closeTableModal;
+async function loadOrders() {
+  const host = document.getElementById('ordersList');
+  try {
+    const { orders } = await api('/api/admin/orders');
+    host.innerHTML = orders.length ? orders.map(order => {
+      const tableLink = order.type === 'table' && order.tableNumber ? `<a class="goto" href="${tableUrl(order.tableNumber)}" target="_blank">🪑 Masaya Git</a>` : '';
+      return `<article class="card" id="order-${order.id}">
+      <h3>${order.type === 'table' ? '🍽️ ' + escapeHtml(order.tableNumber || '') : order.type === 'pickup' ? '🥡 Gel-Al' : '🚚 Paket Servis'} · ${new Date(order.time).toLocaleTimeString('tr-TR')}</h3>
+      <p>${order.items.map(item => `${item.quantity} × ${escapeHtml(item.name)}`).join('<br>')}</p>
+      <p><b>Toplam: ${money(order.total)}</b></p>
+      <div class="actions"><button class="approve" data-approve="${order.id}">✓ Onayla</button><button class="reject" data-reject="${order.id}">✕ Reddet</button>${tableLink}</div>
+    </article>`;
+    }).join('') : '<div class="muted">Bekleyen sipariş yok.</div>';
+    host.querySelectorAll('[data-approve]').forEach(b => b.onclick = () => act('/api/admin/orders/approve', b.dataset.approve, () => { loadOrders(); loadTables(); }));
+    host.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => act('/api/admin/orders/reject', b.dataset.reject, () => { loadOrders(); loadTables(); }));
+  } catch (error) { host.innerHTML = `<div class="err">${escapeHtml(error.message)}</div>`; }
+}
+async function loadCalls() {
+  const host = document.getElementById('callsList');
+  try {
+    const { calls } = await api('/api/admin/waiter-calls');
+    host.innerHTML = calls.length ? calls.map(call => `<article class="card call-card" id="call-${call.id}">
+      <h3>🔔 ${escapeHtml(call.table)} — ${escapeHtml(call.label)}</h3>
+      <p>${new Date(call.time).toLocaleTimeString('tr-TR')}</p>
+      <div class="actions"><button class="seen" data-ack="${call.id}">Gördüm</button><a class="goto" href="${tableUrl(call.table)}" target="_blank">🪑 Masaya Git</a></div>
+    </article>`).join('') : '<div class="muted">Bekleyen çağrı yok.</div>';
+    host.querySelectorAll('[data-ack]').forEach(b => b.onclick = () => act('/api/admin/waiter-calls/ack', b.dataset.ack, () => { loadCalls(); loadTables(); }));
+  } catch (error) { host.innerHTML = `<div class="err">${escapeHtml(error.message)}</div>`; }
+}
+async function act(url, id, reload) {
+  try { await api(url, { method: 'POST', body: JSON.stringify({ id }) }); reload(); }
+  catch (error) { alert('Hata: ' + error.message); }
+}
+
+let eventSource = null;
+function connectEvents() {
+  if (eventSource) return;
+  eventSource = new EventSource(API_BASE + '/api/admin/events');
+  eventSource.addEventListener('new-order', e => { try { const order = JSON.parse(e.data); beep(); speak(order.type === 'table' ? `${order.tableNumber} sipariş geçti.` : 'Paket servis siparişi geldi.'); loadOrders(); loadTables(); } catch {} });
+  eventSource.addEventListener('waiter-call', e => { try { const call = JSON.parse(e.data); beep(); speak(`${call.table}, ${call.label}.`); loadCalls(); loadTables(); } catch {} });
+}
+
+async function enterApp() {
+  /* Garson Terminal APK bu sayfayi "?app=1" ile acar (kullanici istegi,
+     26.09.2026: "normal garsonu kullanmaya gerek yok tam terminali
+     kullansınlar") - giris basarili olunca bizim basit onay/masa panelimizi
+     GOSTERMEDEN direkt SambaPOS'un kendi tam terminaline (garson-web) gecilir.
+     Normal tarayicidan (?app parametresi olmadan) acilirsa davranis DEGISMEZ. */
+  if (new URLSearchParams(location.search).get('app') === '1') {
+    location.replace(API_BASE + '/garson-web/index.html');
+    return;
+  }
+  document.getElementById('loginBox').hidden = true;
+  document.getElementById('mainBox').hidden = false;
+  loadTables(); loadOrders(); loadCalls(); connectEvents();
+  setInterval(loadTables, 20000);
+}
+document.getElementById('gLoginBtn').onclick = async () => {
+  unlockAudio();
+  const email = document.getElementById('gEmail').value.trim();
+  const pin = document.getElementById('gPin').value.trim();
+  const errBox = document.getElementById('gErr');
+  errBox.hidden = true;
+  try { await api('/api/admin/garson-login', { method: 'POST', body: JSON.stringify({ email, pin }) }); enterApp(); }
+  catch (error) { errBox.textContent = error.message; errBox.hidden = false; }
+};
+document.getElementById('gPin').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('gLoginBtn').click(); });
+document.getElementById('gLogoutBtn').onclick = async () => { await api('/api/admin/logout', { method: 'POST' }).catch(() => {}); location.reload(); };
+
+api('/api/admin/me').then(d => { if (d.authed) enterApp(); }).catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register(API_BASE + '/sw.js').catch(() => {});
+</script>
+</body>
+</html>

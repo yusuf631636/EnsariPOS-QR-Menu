@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Garson Paneli</title>
+<link rel="manifest" href="/garson-manifest.webmanifest">
+<link rel="icon" href="/logo.jpg">
+<meta name="theme-color" content="#e67e22">
+<style>
+  :root{--brand:#e67e22;--brand-dark:#c9650f;--bg:#1e1e1e;--text:#f0f0f0;--card:#2a2a2a;--muted:#aaa;--good:#1e8e3e;--bad:#c0392b;--line:rgba(255,255,255,.1);--blue:#2980b9}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);padding-bottom:20px}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+  header h1{margin:0;font-size:16px;font-weight:800}
+  header button{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:7px 11px;font-weight:700;cursor:pointer;font-size:12.5px}
+  #loginBox{max-width:300px;margin:80px auto;background:var(--card);border-radius:16px;padding:24px;text-align:center}
+  #loginBox h1{margin-top:0;font-size:19px}
+  #loginBox input{width:100%;padding:12px;font-size:15px;border:1px solid #444;border-radius:10px;margin:10px 0;background:#1a1a1a;color:#fff}
+  #loginBox input#gPin{font-size:20px;text-align:center;letter-spacing:4px}
+  #loginBox button{width:100%;padding:12px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer}
+  .err{color:#ff6b6b;font-size:13px;margin-top:8px}
+  .section-title{font-size:13px;font-weight:700;color:var(--muted);margin:18px 4px 10px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .badge{background:var(--brand);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px}
+  main{max-width:520px;margin:0 auto;padding:14px}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.3);border:1px solid var(--line)}
+  .card h3{margin:0 0 8px;font-size:15px;font-weight:800}
+  .card p{margin:4px 0;font-size:13px;color:#ddd;line-height:1.5}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .actions button{border:0;border-radius:8px;padding:9px 13px;cursor:pointer;font-weight:700;font-size:12.5px;transition:transform .1s}
+  .actions button:active{transform:scale(.96)}
+  .approve{background:var(--good);color:#fff}
+  .reject{background:var(--bad);color:#fff}
+  .seen{background:var(--brand);color:#fff}
+  .goto{background:var(--blue);color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+  .muted{color:var(--muted);font-size:13px;text-align:center;padding:26px}
+  .call-card{border-left:4px solid var(--bad);animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 2px 8px rgba(192,57,43,.2)}50%{box-shadow:0 2px 16px rgba(192,57,43,.5)}}
+  .table-info{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);border-radius:8px;padding:8px 10px;font-size:12.5px;color:#ffb3b3;margin-top:8px;display:flex;align-items:center;gap:8px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--good);color:#fff;padding:11px 20px;border-radius:10px;font-size:13.5px;font-weight:700;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:0;transition:all .3s;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--bad)}
+</style>
+</head>
+<body>
+
+<div id="loginBox">
+  <h1>🍽️ Garson Paneli</h1>
+  <p class="muted" style="padding:0">E-posta ve SambaPOS yönetici PIN'iniz</p>
+  <input id="gEmail" type="email" placeholder="ornek@eposta.com" autocomplete="username">
+  <input id="gPin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="current-password">
+  <button id="gLoginBtn">Giriş Yap</button>
+  <div id="gErr" class="err" hidden></div>
+</div>
+
+<div id="mainBox" hidden>
+  <header>
+    <h1>🍽️ Garson Paneli</h1>
+    <button id="gLogoutBtn">Çıkış</button>
+  </header>
+  <main>
+    <div class="section-title">🔔 Garson Çağrıları <span class="badge" id="callCount">0</span></div>
+    <div id="callsList"><div class="muted">Yükleniyor…</div></div>
+    <div class="section-title">📋 Yeni Siparişler <span class="badge" id="orderCount">0</span></div>
+    <div id="ordersList"><div class="muted">Yükleniyor…</div></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function api(path, opts) {
+  const res = await fetch(path, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'İstek başarısız.');
+  return data;
+}
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch])); }
+function money(n) { return `${(Number(n) || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`; }
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast ' + type, 2800);
+}
+function tableUrl(name) { return '/siparis?masa=' + encodeURIComponent(name); }
+
+/* Ses */
+let audioCtx = null, soundOn = true;
+function unlockAudio() {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch {}
+}
+function beep() {
+  if (!soundOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    [0, 0.18, 0.36].forEach(delay => {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = 'sine'; osc.frequency.value = 880;
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      const t = audioCtx.currentTime + delay;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      osc.start(t); osc.stop(t + 0.16);
+    });
+  } catch {}
+}
+function speak(text) {
+  if (!soundOn) return;
+  try { if (!('speechSynthesis' in window)) return; const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; speechSynthesis.speak(u); } catch {}
+}
+document.addEventListener('click', unlockAudio, { once: true });
+
+/* ÇAĞRILAR */
+async function loadCalls() {
+  const host = document.getElementById('callsList');
+  try {
+    const { calls } = await api('/api/admin/waiter-calls');
+    document.getElementById('callCount').textContent = calls.length;
+    if (!calls.length) { host.innerHTML = '<div class="muted">Bekleyen çağrı yok.</div>'; return; }
+    host.innerHTML = calls.map(call => `
+      <article class="card call-card">
+        <h3>🔔 ${escapeHtml(call.table)} — ${escapeHtml(call.label)}</h3>
+        <p>${new Date(call.time).toLocaleTimeString('tr-TR')}</p>
+        <div class="table-info">
+          <span>🪑 Masa: <b>${escapeHtml(call.table)}</b></span>
+        </div>
+        <div class="actions">
+          <button class="seen" data-ack="${call.id}">✓ Gördüm</button>
+          <a class="goto" href="${tableUrl(call.table)}" target="_blank">🪑 Masaya Git</a>
+        </div>
+      </article>
+    `).join('');
+    host.querySelectorAll('[data-ack]').forEach(b => b.onclick = async () => {
+      try { await api('/api/admin/waiter-calls/ack', { method: 'POST', body: JSON.stringify({ id: b.dataset.ack }) }); loadCalls(); toast('✓ Görüldü olarak işaretlendi'); }
+      catch (e) { toast('Hata: ' + e.message, 'err'); }
+    });
+  } catch (e) { host.innerHTML = `<div class="muted">${escapeHtml(e.message)}</div>`; }
+}
+
+/* SİPARİŞLER */
+async function loadOrders() {
+  const host = document.getElementById('ordersList');
+  try {
+    const { orders } = await api('/api/admin/orders');
+    document.getElementById('orderCount').textContent = orders.length;
+    if (!orders.length) { host.innerHTML = '<div class="muted">Bekleyen sipariş yok.</div>'; return; }
+    host.innerHTML = orders.map(order => {
+      const kind = order.type === 'table' ? '🍽️ ' + escapeHtml(order.tableNumber || '') : order.type === 'pickup' ? '🥡 Gel-Al' : '🚚 Paket';
+      const tableLink = order.type === 'table' && order.tableNumber ? `<a class="goto" href="${tableUrl(order.tableNumber)}" target="_blank">🪑 Masaya Git</a>` : '';
+      return `
+        <article class="card">
+          <h3>${kind} · ${new Date(order.time).toLocaleTimeString('tr-TR')}</h3>
+          ${order.customerName ? `<p><b>${escapeHtml(order.customerName)}</b>${order.phone ? ' · ' + escapeHtml(order.phone) : ''}</p>` : ''}
+          ${order.address ? `<p>${escapeHtml(order.address)}</p>` : ''}
+          <p>${order.items.map(i => `${i.quantity} × ${escapeHtml(i.name)}`).join('<br>')}</p>
+          <p><b>Toplam: ${money(order.total)}</b></p>
+          <div class="actions">
+            <button class="approve" data-approve="${order.id}">✓ Onayla</button>
+            <button class="reject" data-reject="${order.id}">✕ Reddet</button>
+            ${tableLink}
+          </div>
+        </article>`;
+    }).join('');
+    host.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => {
+      if (!confirm('SambaPOS\'a gönderilsin mi?')) return;
+      try { const r = await api('/api/admin/orders/approve', { method: 'POST', body: JSON.stringify({ id: b.dataset.approve }) }); toast('✓ Gönderildi #' + r.ticketNumber); loadOrders(); }
+      catch (e) { toast('Hata: ' + e.message, 'err'); }
+    });
+    host.querySelectorAll('[data-reject]').forEach(b => b.onclick = async () => {
+      if (!confirm('Reddedilsin mi?')) return;
+      try { await api('/api/admin/orders/reject', { method: 'POST', body: JSON.stringify({ id: b.dataset.reject }) }); toast('✕ Reddedildi'); loadOrders(); }
+      catch (e) { toast('Hata: ' + e.message, 'err'); }
+    });
+  } catch (e) { host.innerHTML = `<div class="muted">${escapeHtml(e.message)}</div>`; }
+}
+
+/* SSE */
+let es = null;
+function connectEvents() {
+  if (es) return;
+  es = new EventSource('/api/admin/events');
+  es.addEventListener('new-order', e => { try { const o = JSON.parse(e.data); beep(); speak(o.type === 'table' ? `${o.tableNumber} sipariş geçti.` : 'Yeni sipariş geldi.'); loadOrders(); } catch {} });
+  es.addEventListener('waiter-call', e => { try { const c = JSON.parse(e.data); beep(); speak(`${c.table}, ${c.label}.`); loadCalls(); } catch {} });
+  es.onerror = () => {};
+}
+
+/* LOGIN */
+async function enterApp() {
+  document.getElementById('loginBox').hidden = true;
+  document.getElementById('mainBox').hidden = false;
+  loadCalls(); loadOrders(); connectEvents();
+}
+document.getElementById('gLoginBtn').onclick = async () => {
+  unlockAudio();
+  const email = document.getElementById('gEmail').value.trim();
+  const pin = document.getElementById('gPin').value.trim();
+  const errBox = document.getElementById('gErr');
+  errBox.hidden = true;
+  try { await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ email, pin }) }); enterApp(); }
+  catch (error) { errBox.textContent = error.message; errBox.hidden = false; }
+};
+document.getElementById('gPin').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('gLoginBtn').click(); });
+document.getElementById('gLogoutBtn').onclick = async () => { await api('/api/admin/logout', { method: 'POST' }).catch(() => {}); location.reload(); };
+
+api('/api/admin/me').then(d => { if (d.authed) enterApp(); }).catch(() => {});
+setInterval(() => {
+  if (!document.getElementById('mainBox').hidden) { loadCalls(); loadOrders(); }
+}, 15000);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,1610 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <script src="scripts/Jquery.min.js"></script>
+    <script src="scripts/jquery.signalR-2.2.0.min.js"></script>
+    <script src="scripts/Queries.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="cordova-shim.js"></script>
+    <script>
+        var storage = window.localStorage;
+        var hesapbtn = storage.getItem("automation");
+        var hesaps = hesapbtn.split(",");
+        var terminalID = storage.getItem("terminalId");
+        var masano = storage.getItem("Masa");
+        var selectlist = [];
+        //Ekrana listeleme fonksiyonu
+        function setTicket(ticket, sec) {
+            var ilkmi = storage.getItem("ilkmi");
+            if (ilkmi != 1)
+            {
+                storage.setItem("ilkbakiye", ticket.totalAmount);
+                storage.setItem("ilkmi", 1);
+                console.log("İlk Bakiye : " + ticket.totalAmount);
+            }
+
+           
+
+
+            var ticketid = ticket.id;
+            storage.setItem("ticketid", ticketid);
+            var str = JSON.stringify(ticket);
+
+            console.log(str);
+            var ordercount=Object.keys(ticket.orders).length;
+            storage.setItem("ordercount", ordercount);
+
+            sec == null ? false : sec;
+            if (ticket.orders.length == 0 || !sec) {
+                //Eğer ürün yoksa sol menüdeki ürün butonları yerine adisyon butonları listelenir
+                mainButtons();
+
+            }
+            if (ticket.tags.length > 0) {
+                $.each(ticket.tags, function (key, item) {
+                    if (item.tagName != '') {
+                        $("#ticketTag").empty();
+                        $("#ticketTag").append('' + item.tagName + ':' + item.tag + '');
+                    }
+                })
+
+            }
+            //Adisyon notu ekrana basma işlemi
+            if (ticket.note != null) {
+                $("#adsnot").empty();
+                $("#adsnot").append(storage.getItem("ticket_note")+':' + ticket.note + '');
+            }
+            //Adisyondaki ürünlerin ekrana listelenmesi bölümü
+            if (ticket != null) {
+                {
+                    $("#value").html(storage.getItem("total")+': ' + ticket.totalAmount.toFixed(2) + '');
+                }
+
+                $.each(ticket.orders, function (key, item) {
+                    var number = item.number;
+                    var yenidate = new Date(item.date);
+                    var hours = yenidate.getHours();
+                    var minutes = yenidate.getMinutes();
+                    var seconds = yenidate.getSeconds();
+                    if (hours < 10) hours = "0" + hours;
+                    if (minutes < 10) minutes = "0" + minutes;
+                    var iddate = hours + "" + minutes+""+seconds;
+                    var divnumber = $("#" + iddate + "").length;
+
+                    var itemnumber = "";
+
+                    if (typeof item.number != "undefined") 
+                        {
+                        itemnumber = item.number;
+                        }
+                    else
+                    {
+                        itemnumber = "";
+                        }
+
+                   
+                    if (isNaN(hours))
+                    {
+                        var lastdate ="";
+                    }
+                    else
+                    {
+                        var lastdate = hours + ":" + minutes;
+                    }
+                   
+                    var secilimi = false;
+                    var pricex = item.price.toFixed(2);//Fiyat formatının .00 şeklinde düzenlenmesi
+                    //Eğer ürünün adeti birden fazla ise başına x ile belirtme
+                    var itemname = item.name.length > 20 ? item.name.slice(0, 15) + "..." : item.name;
+                    if (divnumber == 0) {
+                        if (number == 0) {
+                             {
+                                 $("#Orders").append('<li id=' + iddate + ' style="background-color:transparent;font-family:italic;" class="hed">' + storage.getItem("neworder") + '</li>');
+                            }
+                        } else {
+                             {
+                                 $("#Orders").append('<li id=' + iddate + ' style="background-color:transparent;font-family:italic;" class="hed">' + storage.getItem("orderno") + ':' + itemnumber + '<span class="spn">' + lastdate + '</span></li>');
+                            }
+
+                        }
+
+                    }
+                    if (item.quantity != 1) {
+                        var price = item.quantity * item.price;
+                        var pricefix = price.toFixed(2);
+                        //Porsiyon varsa satırda gözükmesi
+                        if (item.portion != 'Normal') {
+                            $("#Orders").append('<li class="list-group-item oBtn" data-quantity=' + item.quantity + ' data-uid=' + item.uid + ' data-state=0 id=' + key + '>' + item.quantity + 'x' + itemname + ' ' + item.portion + ' <span class="spn">' + pricefix + '</span></li>');
+                        } else {
+                            $("#Orders").append('<li class="list-group-item oBtn" data-quantity=' + item.quantity + ' data-uid=' + item.uid + ' data-state=0 id=' + key + '>' + item.quantity + 'x' + itemname + ' <span class="spn">' + pricefix + '</span></li>');
+                        }
+                    } else {
+                        if (item.portion != 'Normal') {
+                            $("#Orders").append('<li class="list-group-item oBtn" data-quantity=' + item.quantity + ' data-uid=' + item.uid + '  id=' + key + '>' + itemname + ' ' + item.portion + ' <span class="spn">' + pricex + '</span></li>');
+                        } else {
+                            $("#Orders").append('<li class="list-group-item oBtn" data-quantity=' + item.quantity + ' data-uid=' + item.uid + ' data-state=0 id=' + key + '>' + itemname + ' <span class="spn">' + pricex + '</span></li>');
+                        }
+                    }
+
+                    //burda seçili olanların tekrar seçilmesi sağlanır
+                    if (sec) {
+                        for (var i = 0; i < selectlist.length; i++) {
+                            if (item.uid == selectlist[i]) {
+                                secilimi = true;
+                                $('#' + key + '.oBtn').addClass("selected");
+                            }
+                        }
+                    }
+                    //Ürünün tagları ekrana basılır
+                    if (item.tags.length > 0) {
+                        for (var i = 0; i < item.tags.length; i++) {
+                            var name = item.tags[i].tag;
+                            var pricex = item.tags[i].price.toFixed(2);
+                            var quantity = item.tags[i].quantity;
+                            if (quantity > 1) {
+                                pricex = quantity * pricex;
+                                pricex = pricex.toFixed(2);
+                                $('#' + key + '.oBtn').append('<li class="tags">' + quantity + 'x' + name + '<span class="spn">' + pricex + '</span></li>');
+                            } else {
+                                $('#' + key + '.oBtn').append('<li class="tags">' + name + '<span class="spn">' + pricex + '</span></li>');
+                            }
+
+                            //if (note != '') {
+                            //    $('#' + key + '.oBtn').append('<li class="tags">' + name + ':'+note+'<span class="spn">' + pricex + '</span></li>');
+                            //} else {
+
+                            //}
+
+                        }
+                    }
+                    var state;
+                    var iadestate;
+                    var ikramstate;
+                    //Eğer configde seçilen dil ingilizce ise değişim
+                    {
+                        state = storage.getItem("submitted");
+                        iadestate = storage.getItem("void");
+                        ikramstate = storage.getItem("gift");
+                    }
+                    var iadedurum = false;
+                    var ikramdurum = false;
+                    var gonderdurum = false;
+                    var ikramdesc = "";
+                    var iadedesc = "";
+                    $.each(item.states, function (key, item) {
+                        if (item.stateName == "Status" && item.state == state) {
+                            gonderdurum = true;
+                        } else if (item.stateName == "GStatus" && item.state == iadestate) {
+                            iadedesc = item.stateValue != "" ? item.stateValue : null;
+                            iadedurum = true;
+                        } else if (item.stateName == "GStatus" && item.state == ikramstate) {
+                            ikramdesc = item.stateValue != "" ? item.stateValue : null;
+                            ikramdurum = true;
+                        }
+                    })
+                    if (iadedurum) {
+                        //data-state 1
+                        $('#' + key + '.oBtn').removeClass("ikram");
+                        $('#' + key + '.oBtn').css("background-color", "#e6e6e6");
+                        $('#' + key + '.oBtn').addClass("iade");
+                        var labelcolor = $('#' + key + '.oBtn ').css("color");
+                        $('#' + key + '.oBtn').attr("data-state", 1);
+                        if (iadedesc != null) {
+                            $('#' + key + '.oBtn')
+                                .append('<li style="text-decoration: none!important;color:' +
+                                    labelcolor +
+                                    '" class="durum">' +
+                                    iadestate +
+                                    ':' + iadedesc + '</li>');
+                        } else {
+                            $('#' + key + '.oBtn').append('<li style="text-decoration: none!important;color:' + labelcolor + '" class="durum">' + iadestate + '</li>');
+                        }
+                        gonderdurum = true;
+                    }
+                    if (ikramdurum) {
+                        //data-state 2
+                        $('#' + key + '.oBtn').removeClass("iade");
+                        $('#' + key + '.oBtn').css("background-color", "#e6e6e6");
+                        $('#' + key + '.oBtn').addClass("ikram");
+                        var labelcolor = $('#' + key + '.oBtn ').css("color");
+                        $('#' + key + '.oBtn').attr("data-state", 2);
+                        if (ikramdesc != null) {
+                            $('#' + key + '.oBtn')
+                                .append('<li style="text-decoration: none!important;color:' +
+                                    labelcolor +
+                                    '" class="durum">' +
+                                    ikramstate +
+                                    ':' + ikramdesc + '</li>');
+                        } else {
+                            $('#' + key + '.oBtn').append('<li style="text-decoration: none!important;color:' + labelcolor + '" class="durum">' + ikramstate + '</li>');
+                        }
+
+                    }
+                    //Burda seçeceğimiz satırın arka plan renginin uyarlanması
+                    if (gonderdurum) {
+                        $('#' + key + '.oBtn').addClass("dsbldrm");
+                        $('#' + key + '.oBtn .durum').css("background-color", "#e6e6e6");
+                        var labelcolor = $('#' + key + '.oBtn ').css("color");
+                        $('#' + key + '.oBtn').append('<li style="text-decoration: none!important;color:' + labelcolor + ';background-color:#e6e6e6" class="gndr">' + state + '</li>');
+                        $('#' + key + '.oBtn').css("background-color", "#e6e6e6");
+                        var color = $('#' + key + '.oBtn').css("background-color");
+                        $('#' + key + '.oBtn .tags').css("background-color", color);
+                    } else {
+                        if (secilimi) {
+                            $('#' + key + '.oBtn .durum').css("color", "white");
+                            $('#' + key + '.oBtn .iade').css("color", "white");
+                            $('#' + key + '.oBtn .ikram').css("color", "white");
+                            $('#' + key + '.oBtn .tags').css("color", "white");
+                            $('#' + key + '.oBtn .tags').css("background-color", "#3498db");
+                            $('#' + key + '.oBtn .iade').css("background-color", "#3498db");
+                            $('#' + key + '.oBtn .ikram').css("background-color", "#3498db");
+                            $('#' + key + '.oBtn .durum').css("background-color", "#3498db");
+                        } else {
+                            $('#' + key + '.oBtn .tags').css("background-color", "white");
+                            $('#' + key + '.oBtn .durum').css("background-color", "white");
+                            $('#' + key + '.oBtn').css("background-color", "white");
+                        }
+                    }
+                });
+            } else {
+                alert(storage.getItem("technical_problem"));
+            }
+            //Otomatik son satıra inme
+            sec = false;
+            $('#Orders').animate({ scrollTop: $('#Orders').prop("scrollHeight") }, 10);
+        }
+        //Masa numarası ekrana basma
+        function masanumarası() {
+            var ticketid = storage.getItem('ticketId');
+            var masaadi = storage.getItem("Masa");
+            if (ticketid == null)
+            {
+                $("#masanumara").empty();
+                $("#masanumara").append('<span style="font-size="medium">' + masaadi + '</span>');
+            }
+            else
+            {
+                    $("#masanumara").empty();
+                    $("#masanumara").append('<span class="msNo" style="font-size="medium">' + masaadi + ' ' + storage.getItem("ticket") + ':' + ticketid + '</span>');
+                
+            }
+        }
+        function onDeviceReady() {
+            document.addEventListener("backbutton", yourCallbackFunction, false);
+        }
+        function yourCallbackFunction() {
+
+        }
+        function mainButtons() {
+             {
+                 $(".fKpt").text(storage.getItem("close"));
+                $("#event").empty();
+                $.each(hesaps, function (key, item) {
+                    $("#event").append('<button class="btn btn-default fBtn" onclick=hesap(this)>' + item + '</button>');
+                })
+                $("#event").append('<button class="btn btn-default fBtn" onclick=adekle()>'+storage.getItem("add_ticket")+'</button><button class="btn btn-default fBtn" onclick=ekle()>'+storage.getItem("add_order")+'</button><button class="btn btn-default fBtn" onclick=adsnot()>'+storage.getItem("ticket_note")+'</button><button class="btn btn-default fBtn" onclick=tasi()>'+storage.getItem("change_table")+'</button>');
+
+                if (storage.getItem("ticketTag")) {
+                    $("#event").append('<button class="btn btn-default fBtn" onclick=ticketTag(this)>' + storage.getItem("ticketTag") + '</button>');
+                }
+            }
+            
+        }
+        function subButtons() {
+           
+                $("#event").empty();
+                $("#event").append('<button id="arti" class="btn btn-default fBtn" onclick=arti()>+</button><button id="eksi" class="btn btn-default fBtn" onclick=eksi() disabled>-</button><button class="btn btn-default fBtn" id="sil" onclick=sil()>'+storage.getItem("cancel")+'</button>');
+            
+        }
+        $(document).ready(function () {
+            document.addEventListener("deviceready", onDeviceReady, false);
+            $(".user").append(config.userName);
+            //Seçili dile göre adisyon butonlarının yazılarının belirlenmesi
+            mainButtons();
+            masanumarası();
+          
+            //Ürünlerden seçilme işlemi
+            $("#Orders").on('click', '.oBtn', function () {
+                var list = $("ul li");
+                var varmi = false;
+                var count = 0;
+                $.each(list, function (key, item) {
+                    if ($(item).hasClass('selected')) {
+                        varmi = true;
+                        count++;
+                    }
+                });
+                var uid = $(this).data("uid");
+                //Tıklanan ürün seçilmiş ise arkaplan rengi değişir ve listeden id si çıkartılır.
+                var a = $(this).hasClass('selected');
+                if ($(this).hasClass('selected')) {
+                    $(this).removeClass('selected');
+                    var uid = $(this).data("uid");
+                    var index = selectlist.indexOf(uid);
+                    selectlist.splice(index, 1);
+                    //selectlist.splice($.inArray(uid, selectlist), 1);
+                    var x = $(this).attr("id");
+                    var backgroundcolor = $('#' + x + '.oBtn ').css("background-color");
+                    var labelcolor = $('#' + x + '.oBtn ').css("color");
+                    $('#' + x + '.oBtn .tags').css("background-color", backgroundcolor);
+                    $('#' + x + '.oBtn .durum').css("background-color", "#e6e6e6");
+                    $('#' + x + '.oBtn .gndr').css("background-color", "#e6e6e6");
+                    $('#' + x + '.oBtn .gndr').css("color", labelcolor);
+                    $('#' + x + '.oBtn .durum').css("color", "black");
+                    $('#' + x + '.oBtn .tags').css("color", "#3498db");
+                    if (varmi && count == 1) {
+                        mainButtons();
+                        if ($(this).hasClass('dsbldrm')) {
+                            $("#arti").prop("disabled", true)
+                            $("#eksi").prop("disabled", true)
+                            $("#sil").prop("disabled", true)
+                        }
+                    } else {
+                        subButtons();
+                        if ($(this).hasClass('dsbldrm')) {
+                            $("#arti").prop("disabled", true)
+                            $("#eksi").prop("disabled", true)
+                            $("#sil").prop("disabled", true)
+                        }
+                    }
+                } else {
+                    //Seçili değil ise liste id si eklenir ve arkaplan değişir
+                    $(this).addClass('selected');
+                    var uid = $(this).data("uid");
+                    selectlist.push(uid);
+                    var x = $(this).attr("id");
+                    $('#' + x + '.oBtn .durum').css("background-color", "#3498db");
+                    $('#' + x + '.oBtn .tags').css("background-color", "#3498db");
+                    $('#' + x + '.oBtn .gndr').css("background-color", "#3498db");
+                    $('#' + x + '.oBtn .durum').css("color", "white");
+                    $('#' + x + '.oBtn .tags').css("color", "white");
+                    $('#' + x + '.oBtn .gndr').css("color", "white");
+                    subButtons();
+                    if ($(this).hasClass('dsbldrm')) {
+                        $("#arti").prop("disabled", true)
+                        $("#eksi").prop("disabled", true)
+                        $("#sil").prop("disabled", true)
+                    }
+                }
+
+                var sayac = $(this).data("quantity");
+                if (sayac > 1) {
+                    $("#eksi").prop('disabled', false);
+                } else {
+                    $("#eksi").prop('disabled', true);
+                }
+                getTerminalOrderButton(terminalID, selectlist);
+            });
+            $(document).on('click', '.iBtn', function () {
+                $("#model4").empty();
+                var stringvalues = $(this).data("values");
+                var execname = $(this).data("execname");
+                var values = stringvalues.split(",");
+                console.log(values);
+                console.log(execname);
+                if (values.length > 1) {
+                    $("#model4")
+                        .append('<div id="myModal4" class="modal fade" role="dialog"><div class="modal-dialog"><!-- Modal content--><div class="modal-content"><div class="modal-header"><h4 id="sbp" style="text-align:center">'+storage.getItem("select_reasons")+'</h3></div><div class="modal-body" id="body"></div><div class="modal-footer"><button type="button" class="btn btn-danger clsBtn" data-dismiss="modal">'+storage.getItem("close")+'</button></div></div></div></div>');
+                   
+                    $("#body").html(storage.getItem("select_reasons"));
+                    
+                    for (var i = 0; i < values.length; i++) {
+                        $("#body")
+                            .append('<input type="button" style="width:100%;font-size:14px;margin-top:1px" class="btn btn-info value" value="' + values[i] + '" />');
+                    }
+                    $("#myModal4").modal('show');
+                    $(document).on('click', '.value', function () {
+                        var deger = $(this).val();
+                        for (var i = 0; i < selectlist.length; i++) {
+                            executeAutomationCommandForTerminalTicket(terminalID,
+                                selectlist[i],
+                                execname,
+                                deger,
+                                function (result) {
+                                    console.log(result);
+                                    $("#Orders").empty();
+                                    setTicket(result);
+                                })
+                        }
+                        $("#myModal4").modal('hide');
+                    })
+                } else {
+                    console.log(selectlist);
+                    if (selectlist.length > 0) {
+                        for (var i = 0; i < selectlist.length; i++) {
+                            executeAutomationCommandForTerminalTicket(terminalID, selectlist[i], execname, "", function (result) {
+                                console.log(result);
+                                $("#Orders").empty();
+                                setTicket(result);
+                            });
+                        }
+                    } else {
+
+                        executeAutomationCommandForTerminalTicket(terminalID, ticketuid, execname, "", function (result) {
+                            postRefresh(function (callback) {
+                                $("#Orders").empty();
+                                setTicket(result);
+                            });
+
+                        });
+                    }
+                }
+
+            });
+            //Bu ekrana gelindiğinde seçili olan adisyonun açılması işlemi
+            getTerminalTicket(terminalID, function (ticket) {
+                ticketuid = ticket.uid;
+              
+                    console.log("burada");
+                    storage.setItem("totalamount", ticket.totalAmount);
+                    console.log("refresh edildiğinde" + ticket.totalAmount);
+                    var terminalID = storage.getItem('terminalId');
+                    var str2 = storage.getItem('totalamount');
+                    console.log(str2);
+                    setTicket(ticket);
+
+
+                    if (ticket != null) {
+
+                        if (ticket.id > 0)
+                        {
+
+                      
+                        getTicket(ticket.id, function (ticket2) {
+                            {
+                                $("#value").html(storage.getItem("total")+': ' + ticket2.totalAmount.toFixed(2) + '');
+                            }
+                        });
+                        }
+                    }
+                  
+               
+            });
+        });
+        var ticketuid;
+        var uid;
+        //seçilen ürünün adetini arttırma
+        function arti() {
+            var list = $("ul li.selected");
+            console.log(list);
+            $.each(list, function (key, item) {
+                if ($(item).hasClass('selected')) {
+                    uid = $(item).data("uid");
+                    var quantity = $(item).data("quantity");
+                    quantity++;
+                    $("#eksi").prop('disabled', false);
+                    updateOrderQuantityOfTerminalTicket(terminalID, uid, quantity, function (result) {
+                        $("#Orders").empty();
+                        setTicket(result, true);
+                    });
+                }
+            });
+        }
+        //seçilen ürünün adetini azaltma
+        function eksi() {
+            var list = $("ul li");
+            $.each(list, function (key, item) {
+                if ($(item).hasClass('selected')) {
+                    uid = $(item).data("uid");
+                    var quantity = $(item).data("quantity");
+                    if (quantity > 1) {
+                        quantity--;
+                        $("#eksi").prop('disabled', false);
+                        updateOrderQuantityOfTerminalTicket(terminalID, uid, quantity, function (result) {
+                            $("#Orders").empty();
+                            setTicket(result, true);
+                        });
+                    } else {
+                        $("#eksi").prop('disabled', true);
+                    }
+                }
+            });
+        }
+        //seçilen ürünü silme
+        function sil() {
+            var list = $("ul li");
+            $.each(list, function (key, item) {
+                if ($(item).hasClass('selected')) {
+                    uid = $(item).data("uid");
+                    var quantity = $(item).data("quantity");
+                    cancelOrderOnTerminalTicket(terminalID, uid, function (result) {
+                        $("#Orders").empty();
+                        selectlist.pop(uid);
+                        setTicket(result);
+                    });
+                }
+            });
+        }
+        //ürün ekleme
+        function ekle() {
+            window.location = "ticket.html";
+            storage.setItem('load', 'var');
+            storage.setItem('urunekle', 'var');
+        }
+        //masa taşıma işlemi
+        function tasi() {
+            $("#model2").empty();
+            $("#model2").append('<div id="myModal2" class="modal fade" role="dialog"><div class="modal-dialog"><!-- Modal content--><div class="modal-content" ><div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h3 class="tag">'+storage.getItem("select_table")+'</h3></div><div id="Masalar" class="modal-body"></div><div class="modal-footer"><button type="button" class="btn btn-danger clsBtn" data-dismiss="modal">'+storage.getItem("close")+'</button></div></div></div></div>');
+            $(".modal-body").empty();
+            
+            $(".kBtn").val(storage.getItem("save"));
+            $(".clsBtn").html(storage.getItem("close"));
+            $(".tag").html(storage.getItem("select_table"));
+          
+            $("#myModal2").modal('show');
+            //Modele masaların listelenmesi
+            getEntityScreenItems(function (result) {
+                
+                result.forEach(function (item) {
+                    if (item.name == masano) {
+                        if (item.name.length > 16) 
+                        {
+
+                            $("#Masalar").append('<input type="button" class="btn btn-default mBBtn" style="width:19%;height:10vh;background-color:#3498db;;color:' + item.labelColor + ';" value="' + item.name + '"></input>');
+                        } 
+                        else
+                        {
+                            $("#Masalar").append('<input type="button" class="btn btn-default mBtn" style="width:19%;height:10vh;background-color:#3498db;;color:' + item.labelColor + ';" value="' + item.name + '" ></input>');
+                        }
+                    } 
+                    else {
+                        if (item.name.length > 16) {
+                            $("#Masalar").append('<input type="button" class="btn btn-default mBBtn" style="width:19%;height:10vh;background-color:' + item.color + ';color:' + item.labelColor + ';" value="' + item.name + '"></input>');
+                        } else {
+                            $("#Masalar").append('<input type="button" class="btn btn-default mBtn" style="width:19%;height:10vh;background-color:' + item.color + ';color:' + item.labelColor + ';" value="' + item.name + '" ></input>');
+                        }
+                    }
+                });
+
+                $(".mBtn").unbind().click(function () {
+                    changeEntityOfTerminalTicket(terminalID, this.value, function (result) {
+                        closeTerminalTicket(terminalID, function (errorMessage) {
+                            
+                            postRefresh(function (callback) {
+                                if (storage.getItem('exit')) {
+                                    window.location = "x.html";
+                                } else {
+                                    window.location = "index.html";
+                                }
+                            });
+
+                        });
+                    });
+                });
+
+                $(".mBBtn").unbind().click(function () {
+                    changeEntityOfTerminalTicket(terminalID, this.value, function (result) {
+                        closeTerminalTicket(terminalID, function (errorMessage) {
+                            postRefresh(function (callback) {
+                                if (storage.getItem('exit')) {
+                                    window.location = "x.html";
+                                } else {
+                                    window.location = "index.html";
+                                }
+                            });
+                        });
+                    });
+                });
+            });
+        }
+        //TickekTagEkleme işlem
+        function ticketTag(e) {
+            console.log(e);
+            var ticketTag = $(e).text();
+            $("#model3")
+                .append('<div id="myModal3" class="modal fade" role="dialog"><div class="modal-dialog"><!-- Modal content--><div class="modal-content"><div class="modal-header"><h4 style="text-align:center">' + ticketTag + '</h3></div><div class="modal-body"><input type="tel" id="focus" pattern="[0-9]*" inputmode="numeric" class="form-control tag" /></div><div class="modal-footer"><button type="button" class="btn btn-danger clsBtn" data-dismiss="modal">' + storage.getItem("close") + '</button><input type="button" class="btn btn-info sBtn" value="' + storage.getItem("save") + '"/></div></div></div></div>');
+            $("#myModal3").modal('show');
+            $('#myModal3').on('shown.bs.modal', function () {
+                $("#focus").focus();
+            })
+            $(".tag").val(storage.getItem("ttag"));
+            {
+                $(".sBtn").val(storage.getItem("save"));
+                $(".clsBtn").html(storage.getItem("close"))
+            }
+            $(".sBtn").unbind().click(function () {
+                var tag = $(".tag").val();
+                storage.setItem("ttag", tag);
+                if (tag != '') {
+                    updateTerminalTickettag(terminalID, ticketTag, tag, function (result) {
+                        $("#Orders").empty();
+                        setTicket(result);
+                        $("#myModal3").modal('hide');
+                    })
+                } else {
+                    $("#myModal3").modal('hide');
+                }
+
+            });
+            $(".clsBtn").unbind().click(function () { $("#myModal3").modal('hide'); })
+        }
+        //adisyon kapatma işlemi
+        function kapat() {
+            if ($('#Orders').is(':empty')) {
+                postRefresh();
+                window.location = "index.html";
+            } else {
+                storage.removeItem('load');
+
+                var ordercount = storage.getItem("ordercount");
+                var ticketid = storage.getItem("ticketid");
+
+                var lastorderuid = storage.getItem("lastorderuid");
+                console.log("Last Order Uid:" + lastorderuid);
+
+
+
+
+
+                var terminalID = storage.getItem('terminalId');
+
+                var sonrakam;
+                var ilkbakiye;
+                getTicket(ticketid, function (ticket) {
+                    if (!ticket)
+                    {
+                        sonrakam = 0;
+                    }
+                    else
+
+                    {
+                        sonrakam = ticket.totalAmount;
+                    }
+                   
+                    ilkbakiye = storage.getItem("ilkbakiye");
+                    console.log("Şu Anki Rakam : "+ sonrakam);
+                    console.log("İlk Rakam : " + ilkbakiye);
+
+                    if (sonrakam == 0) { sonrakam = ilkbakiye;}
+
+                    
+                    if (parseFloat(ilkbakiye) != parseFloat(sonrakam)) {
+                        console.log("iptal");
+                        alert(storage.getItem("another_user"))
+                        storage.removeItem('ticketid');
+                        storage.removeItem("lastorderuid");
+                        storage.setItem("ilkmi", 0);
+
+                        if (lastorderuid == null)
+                        {
+                            
+                                //clearTerminalTicketOrders(terminalID, function (errorMessage) {
+
+                                //closeTerminalTicket(terminalID, function (errorMessage)
+                                //{
+                                postRefresh(function (callback) {
+                                    if (storage.getItem('exit')) {
+                                        window.location = "x.html";
+                                    } else {
+                                        window.location = "index.html";
+                                    }
+                                });
+                                //});
+                          
+                        }
+                        else
+                        {
+                            cancelOrderOnTerminalTicket(terminalID, lastorderuid, function (errorMessage) {
+                                if (errorMessage)
+                                {
+                                    console.log("HATA");
+                                    console.log(errorMessage.responseText);
+                                }
+                                
+                                //clearTerminalTicketOrders(terminalID, function (errorMessage) {
+
+                                //closeTerminalTicket(terminalID, function (errorMessage)
+                                //{
+                                postRefresh(function (callback) {
+                                    if (storage.getItem('exit')) {
+                                        window.location = "x.html";
+                                    } else {
+                                        window.location = "index.html";
+                                    }
+                                });
+                                //});
+                            });
+
+                        }
+                        
+
+                    }
+
+
+                    else {
+                        console.log("normal");
+                        storage.removeItem('ticketid');
+                        storage.removeItem("lastorderuid");
+                        storage.setItem("ilkmi", 0);
+                        closeTerminalTicket(terminalID, function (errorMessage) {
+                            console.log(errorMessage);
+                            postRefresh(function (callback) {
+                                if (storage.getItem('exit')) {
+                                    window.location = "x.html";
+                                } else {
+                                    window.location = "index.html";
+                                }
+                            });
+                        });
+                    }
+
+                   
+                });
+
+                
+
+
+            }
+        }
+        //Hesapyazdırma işlemi
+        function hesap(a) {
+            var execname = $(a).text();
+            changeEntityOfTerminalTicket(terminalID, masano, function (result) {
+                executeAutomationCommandForTerminalTicket(terminalID, ticketuid, execname, "", function (result) {
+                    closeTerminalTicket(terminalID, function (errorMessage) {
+                        postRefresh(function (callback) {
+                            if (storage.getItem('exit')) {
+                                window.location = "x.html";
+                            } else {
+                                window.location = "index.html";
+                            }
+                        });
+                    });
+                });
+            });
+        }
+        var adsnotu;
+        //Adisyon notu
+        function adsnot() {
+            var adsnotu;
+            var ticketid = 0;
+            $("#model").empty();
+            $("#model").append('<div id="myModal" class="modal fade" role="dialog"><div class="modal-dialog"><!-- Modal content--><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h3>' + storage.getItem("ticket_note") + '</h3></div><div class="modal-body"><input type="text" class="form-control text" id="ticketnote" ></div><div class="modal-footer"><input type="button" value="' + storage.getItem("save") + '" class="btn btn-success kBtn" /></div></div></div></div>');
+            $("#myModal").modal('show');
+            $('#myModal').on('shown.bs.modal', function () {
+                $("#ticketnote").focus();
+            })
+           {
+               $(".kBtn").val(storage.getItem("save"));
+            }
+            $(".kBtn").unbind().click(function () {
+                adsnotu = $("#ticketnote").val();
+                if (adsnotu == '') {
+                    $("#myModal").modal('hide');
+                } else {
+                    updateTerminalTicket(terminalID, adsnotu, function (result) {
+                        $("#Orders").empty();
+                        setTicket(result);
+                        $("#myModal").modal('hide');
+                    });
+                }
+            });
+        }
+        //Yeni Adisyon ekleme
+        function adekle() {
+            storage.removeItem('load');
+            changeEntityOfTerminalTicket(terminalID, masano, function (result) {
+                closeTerminalTicket(terminalID, function (errorMessage) {
+                    postRefresh(function (callback) {
+                        window.location = "ticket.html";
+                    });
+                });
+            });
+        }
+        function getTerminalOrderButton(terminalId, orderUids) {
+            //$("#event").empty();
+            //if (storage.getItem('dil') == '1') {
+            //    $("#event").append('<button id="arti" class="btn btn-default fBtn" onclick=arti()>+</button><button id="eksi" class="btn btn-default fBtn" onclick=eksi() disabled>-</button><button class="btn btn-default fBtn" id="sil" onclick=sil()>Cancel</button>');
+            //} else {
+            //    $("#event").append('<button id="arti" class="btn btn-default fBtn" onclick=arti()>+</button><button id="eksi" class="btn btn-default fBtn" onclick=eksi() disabled>-</button><button class="btn btn-default fBtn" id="sil" onclick=sil()>İptal</button>');
+            //}
+            var durumlar = [{ "val": storage.getItem("void") }, { "val": storage.getItem("cancel_void") }, { "val": storage.getItem("gift") }, { "val": storage.getItem("cancel_void") }, { "val": storage.getItem("void") }, { "val": storage.getItem("cancel_void") }, { "val": storage.getItem("gift") }, { "val": storage.getItem("cancel_gift") }];
+            var data = JSON.stringify(orderUids);
+            getAutomationCommandButtonsForTerminalTicket(terminalId, data, function (result) {
+                console.log(result);
+                $.each(result.data, function (key, item) {
+                    var enter = item.caption;
+                    var str = item.caption;
+                    str = str.replace(/(?:\\[rn]|[\r\n]+)+/g, " ");
+                    var newstr = enter.split(/\r?\n/);
+                    var regex = /(<([^>]+)>)/ig;
+                    //var son = newstr.replace(regex, "");
+                    var son;
+                    var durum = false;
+                    console.log(str);
+                    $.each(durumlar, function (key, item) {
+                        if (str == item.val) {
+                            durum = true;
+                        }
+                    });
+                    if (durum) {
+                        if (item.canExecute) {
+                            $("#event").append('<input class="btn btn-default fBtn iBtn" data-values="' + item.values + '" data-execname="' + item.name + '" type="button" value="' + str + ' "/>');
+                        } else {
+                            $("#event").append('<input class="btn btn-default fBtn iBtn" data-values="' + item.values + '" data-execname="' + item.name + '" type="button" value="' + str + '" disabled/>');
+                        }
+                    }
+                })
+            })
+        }
+    </script>
+    <style>
+        /*Telefon*/
+        @media only screen and (max-width: 480px) {
+            .mBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+            }
+
+            .mBBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 10px;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .iade {
+                text-decoration: line-through;
+                color: #a2a2a2;
+                background-color: #e6e6e6;
+            }
+
+            .gndr {
+                font-size: 8px;
+            }
+
+            .ikram {
+                color: #3a06b4;
+            }
+
+            .durum {
+                font-size: 8px;
+            }
+
+            #Orders {
+                margin-left: 30%;
+                top: 10%;
+                width: 70%;
+                height: 70%;
+                overflow-y: auto;
+                position: fixed;
+                font-family: Calibri;
+            }
+
+            .tags {
+                color: #3399ff;
+                background-color: white;
+                font-size: 10px;
+            }
+
+            input[type="button"]:disabled {
+                background-color: #ddd;
+            }
+
+            button:disabled {
+                background-color: #ddd;
+            }
+
+            .eventler {
+                top: 10%;
+                height: 80%;
+                position: fixed;
+                width: 29%;
+                overflow-y: auto;
+            }
+
+            .area {
+                width: 100%;
+            }
+
+            .fBtn:active {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn:hover {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn {
+                width: 100%;
+                height: 50px;
+                background-color: white;
+                color: black;
+                margin-top: 1px;
+                white-space: normal;
+                border-color: #e0e0e0;
+            }
+
+            .fKpt {
+                width: 100%;
+                font-size: 20px;
+                height: 10%;
+                bottom: 0px;
+            }
+
+            .order li {
+                background-color: #ffffff;
+            }
+
+                .order li.selected {
+                    background-color: #3498db !important;
+                    color: white;
+                }
+
+            .onr {
+                width: 33%;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .spn {
+                float: right;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+            }
+
+            .total {
+                top: 85%;
+            }
+        }
+
+        @media only screen and (min-width: 480px) and (max-width:760px) {
+            .mBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+            }
+
+            .mBBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 11px;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .iade {
+                text-decoration: line-through;
+                color: #a2a2a2;
+                background-color: #e6e6e6;
+            }
+
+            .gndr {
+                font-size: 10px;
+            }
+
+            .ikram {
+                color: #3a06b4;
+            }
+
+            .durum {
+                font-size: 10px;
+            }
+
+            #Orders {
+                margin-left: 30%;
+                top: 16%;
+                width: 70%;
+                height: 61%;
+                overflow-y: auto;
+                position: fixed;
+                font-family: Calibri;
+            }
+
+            .tags {
+                color: #3399ff;
+                background-color: white;
+                font-size: 10px;
+            }
+
+            input[type="button"]:disabled {
+                background-color: #ddd;
+            }
+
+            button:disabled {
+                background-color: #ddd;
+            }
+
+            .eventler {
+                top: 16%;
+                height: 66%;
+                position: fixed;
+                width: 29%;
+                overflow-y: auto;
+            }
+
+            .area {
+                width: 100%;
+            }
+
+            .fBtn:active {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn:hover {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn {
+                width: 100%;
+                height: 50px;
+                background-color: white;
+                color: black;
+                margin-top: 1px;
+                white-space: normal;
+                border-color: #e0e0e0;
+            }
+
+            .fKpt {
+                width: 100%;
+                font-size: 20px;
+                height: 15%;
+                bottom: 0px;
+            }
+
+            .total {
+                top: 77%;
+            }
+
+            .order li {
+                background-color: #ffffff;
+            }
+
+                .order li.selected {
+                    background-color: #3498db !important;
+                    color: white;
+                }
+
+            .onr {
+                width: 33%;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .spn {
+                float: right;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+            }
+        }
+
+        @media only screen and (min-width: 480px) and (max-width:760px) and (min-height:800px) {
+            .mBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+            }
+
+            .mBBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 11px;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .iade {
+                text-decoration: line-through;
+                color: #a2a2a2;
+                background-color: #e6e6e6;
+            }
+
+            .gndr {
+                font-size: 12px;
+            }
+
+            .ikram {
+                color: #3a06b4;
+            }
+
+            .durum {
+                font-size: 12px;
+            }
+
+            #Orders {
+                margin-left: 30%;
+                top: 8%;
+                width: 70%;
+                height: 75%;
+                overflow-y: auto;
+                position: fixed;
+                font-family: Calibri;
+            }
+
+            .tags {
+                color: #3399ff;
+                background-color: white;
+                font-size: 12px;
+            }
+
+            input[type="button"]:disabled {
+                background-color: #ddd;
+            }
+
+            button:disabled {
+                background-color: #ddd;
+            }
+
+            .eventler {
+                top: 8%;
+                height: 75%;
+                position: fixed;
+                width: 29%;
+                overflow-y: auto;
+            }
+
+            .area {
+                width: 100%;
+            }
+
+            .fBtn:active {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn:hover {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn {
+                width: 100%;
+                height: 70px;
+                background-color: white;
+                color: black;
+                margin-top: 1px;
+                white-space: normal;
+                border-color: #e0e0e0;
+            }
+
+            .fKpt {
+                width: 100%;
+                font-size: 18px;
+                height: 70px;
+                bottom: 0px;
+            }
+
+            .total {
+                top: 84%;
+            }
+
+            .order li {
+                background-color: #ffffff;
+            }
+
+                .order li.selected {
+                    background-color: #3498db !important;
+                    color: white;
+                }
+
+            .onr {
+                width: 33%;
+                white-space: normal;
+                word-wrap: break-word;
+            }
+
+            .spn {
+                float: right;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+                font-size: 14px;
+            }
+        }
+
+        @media only screen and (min-width: 768px) and (max-height:800px) {
+            .mBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+            }
+
+            .mBBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 11px;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .iade {
+                text-decoration: line-through;
+                color: #a2a2a2;
+                background-color: #e6e6e6;
+            }
+
+            .gndr {
+                font-size: 10px;
+            }
+
+            .ikram {
+                color: #3a06b4;
+            }
+
+            .durum {
+                font-size: 10px;
+            }
+
+            #Orders {
+                margin-left: 30%;
+                top: 9vh;
+                width: 70%;
+                height: 70%;
+                overflow-y: auto;
+                position: fixed;
+                font-family: Calibri;
+            }
+
+            .tags {
+                color: #3399ff;
+                background-color: white;
+                font-size: 10px;
+            }
+
+            input[type="button"]:disabled {
+                background-color: #ddd;
+            }
+
+            button:disabled {
+                background-color: #ddd;
+            }
+
+            .eventler {
+                top: 9vh;
+                height: 80%;
+                position: fixed;
+                width: 29%;
+                overflow-y: auto;
+            }
+
+            .area {
+                width: 100%;
+            }
+
+            .fBtn:active {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn:hover {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn {
+                width: 100%;
+                background-color: white;
+                color: black;
+                margin-top: 1px;
+                white-space: normal;
+                border-color: #e0e0e0;
+                bottom: 0px;
+                height: 90px !important;
+                font-size: 20px !important;
+            }
+
+            .fKpt {
+                width: 100%;
+                bottom: 0px;
+                height: 70px !important;
+                font-size: 25px !important;
+            }
+
+            .total {
+                top: 85%;
+                font-size: 30px !important;
+            }
+
+            .order li {
+                background-color: #ffffff;
+            }
+
+                .order li.selected {
+                    background-color: #3498db !important;
+                    color: white;
+                }
+
+            .onr {
+                width: 33%;
+                white-space: normal;
+                word-wrap: break-word;
+                font-size: 25px !important;
+            }
+
+            .spn {
+                float: right;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+                font-size: 25px !important;
+            }
+
+            .msNo {
+                font-size: 20px !important;
+            }
+
+            .mdlBtn {
+                height: 4vh;
+                font-size: 20px !important;
+            }
+
+            .tagBtn {
+                height: 4vh;
+                font-size: 20px !important;
+            }
+
+            .mdlName {
+                font-size: 25px !important;
+            }
+
+            .cls, .cBtn {
+                height: 6vh;
+                font-size: 20px !important;
+            }
+        }
+
+        @media only screen and (min-width: 768px) and (min-height:800px) {
+            .mBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+            }
+
+            .mBBtn {
+                margin: 1px;
+                white-space: normal;
+                font-family: Calibri;
+                font-size: 11px;
+            }
+
+            body {
+                background-color: #f5f5f5;
+            }
+
+            ul {
+                list-style-type: none;
+            }
+
+            .iade {
+                text-decoration: line-through;
+                color: #a2a2a2;
+                background-color: #e6e6e6;
+            }
+
+            .gndr {
+                font-size: 10px;
+            }
+
+            .ikram {
+                color: #3a06b4;
+            }
+
+            .durum {
+                font-size: 10px;
+            }
+
+            #Orders {
+                margin-left: 30%;
+                top: 6vh;
+                width: 70%;
+                height: 70%;
+                overflow-y: auto;
+                position: fixed;
+                font-family: Calibri;
+            }
+
+            .tags {
+                color: #3399ff;
+                background-color: white;
+                font-size: 10px;
+            }
+
+            input[type="button"]:disabled {
+                background-color: #ddd;
+            }
+
+            button:disabled {
+                background-color: #ddd;
+            }
+
+            .eventler {
+                top: 6vh;
+                height: 80%;
+                position: fixed;
+                width: 29%;
+                overflow-y: auto;
+            }
+
+            .area {
+                width: 100%;
+            }
+
+            .fBtn:active {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn:hover {
+                background-color: #3399ff !important;
+            }
+
+            .fBtn {
+                width: 100%;
+                background-color: white;
+                color: black;
+                margin-top: 1px;
+                white-space: normal;
+                border-color: #e0e0e0;
+                bottom: 0px;
+                height: 90px !important;
+                font-size: 20px !important;
+            }
+
+            .fKpt {
+                width: 100%;
+                bottom: 0px;
+                height: 70px !important;
+                font-size: 25px !important;
+            }
+
+            .total {
+                top: 85%;
+                font-size: 30px !important;
+            }
+
+            .order li {
+                background-color: #ffffff;
+            }
+
+                .order li.selected {
+                    background-color: #3498db !important;
+                    color: white;
+                }
+
+            .onr {
+                width: 33%;
+                white-space: normal;
+                word-wrap: break-word;
+                font-size: 25px !important;
+            }
+
+            .spn {
+                float: right;
+            }
+
+            .oBtn {
+                font-family: Calibri;
+                font-size: 25px !important;
+            }
+
+            .msNo {
+                font-size: 20px !important;
+            }
+
+            .mdlBtn {
+                height: 4vh;
+                font-size: 20px !important;
+            }
+
+            .tagBtn {
+                height: 4vh;
+                font-size: 20px !important;
+            }
+
+            .mdlName {
+                font-size: 25px !important;
+            }
+
+            .cls, .cBtn {
+                height: 6vh;
+                font-size: 20px !important;
+            }
+        }
+
+        .head {
+            height: 9%;
+        }
+
+        .hed {
+            height: 20px;
+            background-color:transparent!important;
+        }
+
+        .navbar-header {
+            height: 50px;
+        }
+
+        .logo {
+            height: 30px !important;
+            width: auto !important;
+        }
+
+        .lg {
+            position: fixed !important;
+            top: 8px !important;
+            margin-left: 8px !important;
+        }
+
+        .user {
+            position: fixed;
+            top: 14px;
+            float: right;
+            right: 10px;
+            font-size: 15px;
+            font-family: Calibri;
+            margin: 1px 1px 1px 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="head" style="position:fixed;top:0px;width:100%">
+        <nav class="navbar navbar-inverse" style="top:0px;display:block;border:none;border-radius:0 0 0 0;background-color:#de3838;color:#ffffff">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <!--href="#overlayPanel"-->
+                    <span class="lg"><img class="logo" src="images/sambapos-icon.png" /></span>
+                    <span style="position: relative;left:35px ;top: 20px; font-size:15px;text-shadow: none; color: #ffffff" class="masano" id="masanumara"></span>
+                    <span class="user" style="color:#ffffff;"></span>
+                    <!--<a onclick="openNav()" class="glyphicon glyphicon-plus" style="color:#ffffff;text-shadow:none;font-size:large;position:absolute;right:10px;top:30%;"></a>-->
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div data-role="main" class="ui-content">
+    </div>
+    <ul class="list-group order" id="Orders"></ul>
+    <div id="adsnot" class="adsnotu" style="font-size:14px;color:black;position:fixed;right:30px;top:80%;"></div>
+    <div id="event" class="eventler">
+        <!--<button class="btn btn-default fBtn" onclick=hesap()>Hesap Yaz</button>
+        <button class="btn btn-default fBtn" onclick=adekle()>Adisyon Ekle</button>
+        <button class="btn btn-default fBtn" onclick=ekle()>Ürün Ekle</button>
+        <button class="btn btn-default fBtn" onclick=adsnot()>Adisyon Notu</button>
+        <button class="btn btn-default fBtn" onclick=tasi()>Masa Değiştir</button>-->
+    </div>
+    <button class="fKpt" style="position:fixed;color:white;border:none;background-color:#de3838;" onclick=kapat() id="buttonkapat"><span>Kapat</span></button>
+
+    <script>
+    $("#buttonkapat").html(storage.getItem("close"));
+    </script>
+
+
+    <div id="model"></div><div id="model2"></div><div id="model3"></div><div id="model4"></div>
+    <div class="total" style="font-size:20px;color:#ca0808;font-weight:bold;position:fixed;right:30px" id="value"></div>
+    <div id="ticketTag" class="ticketTag" style="font-size:14px;color:black;position:fixed;left:10px;top:85%;"></div>
+</body>
+</html>

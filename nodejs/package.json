@@ -1,0 +1,14 @@
+{
+  "name": "sambapos-qr-menu",
+  "version": "1.6.8",
+  "private": true,
+  "description": "QR Menu sitesi + SambaPOS canli menu goruntuleme paneli",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "firebase-admin": "^14.4.0",
+    "sharp": "^0.35.4"
+  }
+}

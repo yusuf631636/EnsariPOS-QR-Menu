@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Restoran Bilgileri - Öz Urfa Yusuf Usta</title>
+<style>
+  :root{
+    --brand:#3498db; --bg:#faf6ee; --text:#2a1c14; --card:#fff; --muted:#8a7a68; --gold:#c9a227;
+    --shadow:0 6px 18px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);max-width:520px;margin-left:auto;margin-right:auto;padding-bottom:30px}
+  header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(135deg,var(--brand),color-mix(in srgb, var(--brand) 60%, #000));color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+  header a{color:#fff;text-decoration:none;font-size:20px;line-height:1}
+  header h1{margin:0;font-size:17px;font-weight:800}
+  .hero-card{margin:16px;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:26px 20px;text-align:center;border:1px solid rgba(128,128,128,.1)}
+  .hero-card img{width:auto;max-width:200px;height:64px;border-radius:14px;object-fit:contain;background:#fff;padding:4px 8px;margin-bottom:10px}
+  .hero-card h2{margin:0;font-size:20px;font-weight:800}
+  .hero-card p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .info-card{margin:0 16px 16px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid rgba(128,128,128,.1);overflow:hidden}
+  .info-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(128,128,128,.1)}
+  .info-row:last-child{border-bottom:none}
+  .info-row .ic{font-size:19px;flex:none;width:26px;text-align:center}
+  .info-row .label{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+  .info-row .value{font-size:14.5px;font-weight:700;color:var(--text)}
+  .info-row a.value{color:var(--text);text-decoration:none}
+  .status-pill{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;margin-top:2px}
+  .status-pill .dot{width:7px;height:7px;border-radius:50%}
+  .status-pill.open{color:#1e8e3e}
+  .status-pill.open .dot{background:#2ecc71;box-shadow:0 0 6px #2ecc71}
+  .status-pill.closed{color:#c0392b}
+  .status-pill.closed .dot{background:#e74c3c;box-shadow:0 0 6px #e74c3c}
+  .directions-btn{display:block;margin:0 16px 16px;background:linear-gradient(135deg,var(--brand),color-mix(in srgb, var(--brand) 70%, #000));color:#fff;text-align:center;text-decoration:none;font-weight:800;font-size:14.5px;padding:14px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  .maps-wrap{margin:0 16px 16px;border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+  .social-row{display:flex;justify-content:center;gap:12px;margin:0 16px 20px}
+  .social-row a{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="./index" aria-label="Geri">←</a>
+  <h1>Restoran Bilgileri</h1>
+</header>
+
+<div class="hero-card">
+  <img src="./logo.png" alt="Öz Urfa Yusuf Usta Logo">
+  <h2>Öz Urfa Yusuf Usta</h2>
+  <p>Bursa'nın Lezzet Durağı</p>
+</div>
+
+<div class="info-card">
+  <div class="info-row">
+    <span class="ic">🕐</span>
+    <div>
+      <div class="label">Çalışma Saatleri</div>
+      <div class="value" id="hoursValue">—</div>
+      <div id="statusPill"></div>
+    </div>
+  </div>
+  <div class="info-row">
+    <span class="ic">📞</span>
+    <div>
+      <div class="label">Telefon</div>
+      <a class="value" href="tel:+902243660605">0224 366 06 05</a>
+    </div>
+  </div>
+  <div class="info-row">
+    <span class="ic">📱</span>
+    <div>
+      <div class="label">Cep</div>
+      <a class="value" href="tel:+905455623239">0545 562 32 39</a>
+    </div>
+  </div>
+  <div class="info-row">
+    <span class="ic">📍</span>
+    <div>
+      <div class="label">Adres</div>
+      <div class="value">Arabayatağı Mah. 1.Aras Sokak No:18, Yıldırım/Bursa</div>
+    </div>
+  </div>
+</div>
+
+<a class="directions-btn" href="https://www.google.com/maps/search/?api=1&query=%C3%96z%20Urfa%20Yusuf%20Usta" target="_blank">📍 Yol Tarifi Al</a>
+
+<div class="maps-wrap">
+  <iframe
+    src="https://maps.google.com/maps?width=600&amp;height=400&amp;hl=tr&amp;q=Arabayatağı Mah. 1.Aras Sokak No:18, Yıldırım, Bursa&amp;t=&amp;z=15&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"
+    width="100%"
+    height="220"
+    style="border:0;display:block"
+    allowfullscreen=""
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade">
+  </iframe>
+</div>
+
+<div class="social-row">
+  <a href="https://www.facebook.com/ozurfayusufusta" target="_blank" style="background:#1877f2">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.16 8.44 9.94v-7.03H7.9v-2.91h2.54V9.83c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.91h-2.34V22c4.78-.78 8.44-4.94 8.44-9.94Z"/></svg>
+  </a>
+  <a href="https://www.instagram.com/ozurfayusufusta" target="_blank" style="background:radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%)">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 2c2.72 0 3.06.01 4.12.06 1.06.05 1.79.22 2.43.46.66.26 1.22.6 1.76 1.14.54.54.88 1.1 1.14 1.76.24.64.41 1.37.46 2.43C21.97 8.92 22 9.26 22 12s-.03 3.06-.06 4.12c-.05 1.06-.22 1.79-.46 2.43a4.9 4.9 0 0 1-1.14 1.76 4.9 4.9 0 0 1-1.76 1.14c-.64.24-1.37.41-2.43.46C15.06 21.97 14.72 22 12 22s-3.06-.03-4.12-.06c-1.06-.05-1.79-.22-2.43-.46a4.9 4.9 0 0 1-1.76-1.14 4.9 4.9 0 0 1-1.14-1.76c-.24-.64-.41-1.37-.46-2.43C2.03 15.06 2 14.72 2 12s.03-3.06.06-4.12c.05-1.06.22-1.79.46-2.43.26-.66.6-1.22 1.14-1.76a4.9 4.9 0 0 1 1.76-1.14c.64-.24 1.37-.41 2.43-.46C8.94 2.03 9.28 2 12 2Zm0 2c-2.67 0-2.99.01-4.04.06-.86.04-1.32.18-1.63.3-.41.16-.7.35-1 .66-.31.3-.5.59-.66 1-.12.31-.26.77-.3 1.63C4.32 8.71 4.31 9.03 4.31 12s.01 3.29.06 4.35c.04.86.18 1.32.3 1.63.16.41.35.7.66 1 .3.31.59.5 1 .66.31.12.77.26 1.63.3 1.05.05 1.37.06 4.04.06s2.99-.01 4.04-.06c.86-.04 1.32-.18 1.63-.3.41-.16.7-.35 1-.66.31-.3.5-.59.66-1 .12-.31.26-.77.3-1.63.05-1.06.06-1.38.06-4.35s-.01-3.29-.06-4.35c-.04-.86-.18-1.32-.3-1.63a2.9 2.9 0 0 0-.66-1 2.9 2.9 0 0 0-1-.66c-.31-.12-.77-.26-1.63-.3C14.99 4.01 14.67 4 12 4Zm0 3.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5Zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5Zm5.7-3.7a1.05 1.05 0 1 1-1.05-1.05 1.05 1.05 0 0 1 1.05 1.05Z"/></svg>
+  </a>
+  <a href="https://wa.me/902243660605" target="_blank" style="background:#25D366">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20.52 3.48A11.7 11.7 0 0012 0C5.37 0 0 5.37 0 12c0 2.11.55 4.08 1.5 5.84L0 24l6.28-1.58A11.94 11.94 0 0012 24c6.63 0 12-5.37 12-12 0-3.21-1.25-6.24-3.48-8.52zm-8.52 18c-2.05 0-3.97-.55-5.63-1.5l-.4-.24-3.72.94.99-3.62-.26-.42A9.96 9.96 0 012 12c0-5.52 4.48-10 10-10s10 4.48 10 10-4.48 10-10 10zm5.42-7.47c-.29-.15-1.71-.84-1.97-.94-.26-.1-.45-.15-.64.15-.19.29-.73.94-.89 1.13-.16.19-.31.21-.58.07-.29-.15-1.23-.45-2.34-1.44-.87-.77-1.46-1.72-1.63-2.01-.16-.29-.02-.44.13-.59.13-.13.29-.33.44-.49.15-.16.19-.27.29-.45.1-.19.05-.35-.02-.49-.07-.15-.64-1.54-.88-2.12-.23-.56-.46-.49-.64-.5-.16 0-.35-.01-.54-.01s-.49.07-.75.35c-.26.29-1 1-.99 2.43 0 1.42 1.03 2.8 1.17 2.99.15.19 2.03 3.1 4.92 4.35.69.3 1.22.48 1.64.62.69.22 1.32.19 1.82.12.56-.08 1.71-.7 1.95-1.38.24-.69.24-1.28.17-1.38-.07-.1-.26-.15-.54-.29z"/></svg>
+  </a>
+  <!--SOCIAL_EXTRA_TIKTOK--><!--SOCIAL_EXTRA_YOUTUBE--><!--SOCIAL_EXTRA_TWITTER--><!--SOCIAL_EXTRA_MAPS-->
+</div>
+
+<script>
+(async function(){
+  try{
+    const data = await fetch('/api/delivery-zones').then(r=>r.json());
+    const hours = String(data.workingHours || '').trim();
+    if (!hours) return;
+    document.getElementById('hoursValue').textContent = hours;
+    const m = hours.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    const now = new Date();
+    const mins = now.getHours()*60 + now.getMinutes();
+    const start = (+m[1])*60 + (+m[2]);
+    const end = (+m[3])*60 + (+m[4]);
+    const isOpen = end > start ? (mins>=start && mins<end) : (mins>=start || mins<end);
+    document.getElementById('statusPill').innerHTML = `<span class="status-pill ${isOpen?'open':'closed'}"><span class="dot"></span>${isOpen?'Şu anda açık':'Şu anda kapalı'}</span>`;
+  }catch{}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Local Netlify folder
+.netlify
+
+# Musteriye ozel / calisma zamani verisi - motor deposuna ASLA girmemeli
+config.json
+.env
+orders.json
+calls.json
+*.bak
